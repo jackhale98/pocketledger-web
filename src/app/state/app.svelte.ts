@@ -96,8 +96,9 @@ export class AppState {
       },
     );
     try {
-      this.store = vaultStore();
-      this.vaults = await this.store.listVaults();
+      const store = vaultStore();
+      this.store = store;
+      this.vaults = await store.listVaults();
     } catch {
       this.store = null; // IndexedDB unavailable (private mode): demo only
     }

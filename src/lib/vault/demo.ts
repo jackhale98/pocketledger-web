@@ -19,9 +19,19 @@ export function shiftDates(text: string, months: number): string {
   );
 }
 
+/** Remove transactions dated after `today` (the demo's last month becomes the current, partial month). */
+export function dropFuture(text: string, todayIso: string): string {
+  const blocks = text.split(/\n(?=\d{4}-\d\d-\d\d)/);
+  return blocks.filter((b) => !/^\d{4}-\d\d-\d\d/.test(b) || b.slice(0, 10) <= todayIso).join('\n');
+}
+
 export function demoFiles(today = new Date()): Record<string, string> {
   const months = today.getFullYear() * 12 + today.getMonth() - (DEMO_ANCHOR.year * 12 + DEMO_ANCHOR.month - 1);
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const files: Record<string, string> = {};
-  for (const [path, text] of Object.entries(raw)) files[path.replace('/src/demo/vault/', '')] = shiftDates(text, months);
+  for (const [path, text] of Object.entries(raw)) {
+    const shifted = shiftDates(text, months);
+    files[path.replace('/src/demo/vault/', '')] = path.endsWith('.journal') && !path.includes('budget') ? dropFuture(shifted, iso) : shifted;
+  }
   return files;
 }

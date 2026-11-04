@@ -71,7 +71,8 @@ export class HledgerEngine implements Engine {
 
   private rootArgs(snapshot = this.snapshot): string[] {
     if (!snapshot) throw new EngineFailure([{ kind: 'internal', message: 'No journal loaded' }]);
-    return ['-f', `${VAULT_ROOT}/${snapshot.rootFile}`];
+    // --no-conf: a hledger.conf could change report shapes the decoders rely on.
+    return ['-f', `${VAULT_ROOT}/${snapshot.rootFile}`, '--no-conf'];
   }
 
   private async exec(args: string[], useCache = true): Promise<RawResult> {
@@ -258,7 +259,7 @@ export class HledgerEngine implements Engine {
     const files = { ...this.snapshot.files, ...extraFiles };
     const previous = this.snapshot;
     this.backend.mount(files);
-    const pending = this.backend.run(['-f', `${VAULT_ROOT}/${csvPath}`, '--rules', `${VAULT_ROOT}/${rulesPath}`, 'print', '-O', 'json']);
+    const pending = this.backend.run(['-f', `${VAULT_ROOT}/${csvPath}`, '--no-conf', '--rules', `${VAULT_ROOT}/${rulesPath}`, 'print', '-O', 'json']);
     this.backend.mount(previous.files);
     const r = await pending;
     if (r.code !== 0) return { txns: [], errors: decodeErrors(r.stderr, toVault, 'parse') };

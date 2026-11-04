@@ -63,7 +63,7 @@ export class WasiCliBackend implements EngineBackend {
       new ConsoleStdout((b) => out.push(b.slice())),
       new ConsoleStdout((b) => err.push(b.slice())),
       root,
-    ]);
+    ], { debug: false });
     const instance = await WebAssembly.instantiate(this.module, { wasi_snapshot_preview1: wasi.wasiImport });
     let code: number;
     try {

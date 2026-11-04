@@ -203,7 +203,7 @@
   .chips::-webkit-scrollbar { display: none; }
   .qerr { font-size: 0.85rem; margin: 0 4px 10px; white-space: pre-wrap; }
   .count { font-size: 0.8rem; margin: 0 4px 6px; }
-  .list { overflow: hidden; }
+  .list { overflow: clip; }
   .day {
     position: sticky; top: 56px; z-index: 1; display: flex; justify-content: space-between; padding: 8px 16px;
     font-size: 0.78rem; font-weight: 650; color: var(--text-2); background: var(--surface-2); border-bottom: 1px solid var(--border);
