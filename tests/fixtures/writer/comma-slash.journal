@@ -1,0 +1,23 @@
+; decimal comma, slashed dates, right-side commodities
+decimal-mark ,
+commodity 1.000,00 EUR
+
+2024/01/02 Coffee
+    expenses:food            3,50 EUR
+    assets:bank
+
+2024/01/03 * Rent
+    expenses:rent        1.234,56 EUR
+    assets:bank         -1.234,56 EUR = -1.238,06 EUR
+
+2024/1/4 Salary
+    assets:bank          2.000,00 EUR
+    income:salary
+
+2024/01/05 Shares
+    assets:broker         10 ACME @ 12,50 EUR
+    assets:bank
+
+2024.01.06 Dotted date
+    expenses:misc            0,75 EUR
+    assets:cash
