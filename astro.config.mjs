@@ -81,7 +81,7 @@ export default defineConfig({
         "img-src 'self' data: blob:",
         "font-src 'self'",
         "worker-src 'self'",
-        [
+        /** @type {`connect-src${string}`} */ ([
           'connect-src',
           "'self'",
           'https://api.dropboxapi.com',
@@ -91,7 +91,7 @@ export default defineConfig({
           ...extraConnect,
         ]
           .filter(Boolean)
-          .join(' '),
+          .join(' ')),
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",

@@ -19,7 +19,7 @@ export function parseAmountInput(raw: string, decimalMark: '.' | ',' = '.'): Par
   const lead = /^(-?)\s*([^\d\s.,+\-=()]+)\s*(.*)$/.exec(s);
   if (lead && lead[2]) {
     commodity = lead[2];
-    s = lead[1] + lead[3];
+    s = (lead[1] ?? '') + (lead[3] ?? '');
   } else {
     const trail = /^(.*?[\d.,)])\s*([^\d\s.,+\-*/=()]+)$/.exec(s);
     if (trail) {
