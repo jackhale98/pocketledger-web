@@ -43,8 +43,8 @@
 </script>
 
 <figure class="chart">
-  <div class="legend" aria-hidden="true">
-    <button class="link" type="button" onclick={() => (showTable = !showTable)}>{showTable ? 'Chart' : 'Table'}</button>
+  <div class="legend">
+    <button class="link" type="button" onclick={() => (showTable = !showTable)} aria-label={showTable ? `Show ${title} as a chart` : `Show ${title} as a table`}>{showTable ? 'Chart' : 'Table'}</button>
   </div>
   {#if showTable}
     <div class="table-wrap">

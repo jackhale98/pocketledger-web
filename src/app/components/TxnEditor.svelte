@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { EngineError, Status } from '$lib/contracts/engine';
   import type { PostingDraft, TxnDraft } from '$lib/contracts/writer';
   import type { AmountStyle } from '$lib/contracts/amount';
@@ -56,6 +57,12 @@
   // Initialise each time the sheet opens.
   $effect(() => {
     if (!editor.open) return;
+    void editor.txn;
+    void editor.initial;
+    untrack(init);
+  });
+
+  function init() {
     errors = [];
     rawErrors = [];
     autofilled = false;
@@ -93,7 +100,7 @@
       rawText = '';
     }
     while (rows.length < 2) rows.push(blank());
-  });
+  }
 
   // Autofill postings from the most recent transaction with the same payee (like `hledger add`).
   function autofill(payee: string) {

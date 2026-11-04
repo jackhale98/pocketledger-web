@@ -15,7 +15,7 @@
 </script>
 
 <div class="vs" class:compact>
-  <button class={compact ? 'icon-btn' : 'current'} type="button" aria-haspopup="menu" aria-expanded={open} onclick={() => (open = !open)} aria-label="Switch vault (current: {app.vault?.name ?? 'none'})">
+  <button class={compact ? 'icon-btn' : 'current'} type="button" aria-haspopup="menu" aria-expanded={open} onclick={() => (open = !open)} aria-label={compact ? `Switch journal (current: ${app.vault?.name ?? 'none'})` : undefined} title="Switch journal">
     <Icon name={providerIcon[app.vault?.provider ?? 'demo'] ?? 'folder'} />
     {#if !compact}
       <span class="name">{app.vault?.name ?? '—'}</span>

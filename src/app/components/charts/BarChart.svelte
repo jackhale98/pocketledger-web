@@ -34,9 +34,9 @@
 </script>
 
 <figure class="chart">
-  <div class="legend" aria-hidden="true">
-    {#each series as s (s.name)}<span><i style:background={s.color}></i>{s.name}</span>{/each}
-    <button class="link" type="button" onclick={() => (showTable = !showTable)}>{showTable ? 'Chart' : 'Table'}</button>
+  <div class="legend">
+    {#each series as s (s.name)}<span aria-hidden="true"><i style:background={s.color}></i>{s.name}</span>{/each}
+    <button class="link" type="button" onclick={() => (showTable = !showTable)} aria-label={showTable ? `Show ${title} as a chart` : `Show ${title} as a table`}>{showTable ? 'Chart' : 'Table'}</button>
   </div>
   {#if showTable}
     <div class="table-wrap">
