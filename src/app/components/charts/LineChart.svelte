@@ -12,7 +12,8 @@
     title,
   }: { labels: string[]; values: number[]; color?: string; format?: (v: number) => string; prefix?: string; height?: number; title: string } = $props();
 
-  let width = $state(600);
+  // Starts at 0 so the chart never props its container open; it renders once measured.
+  let width = $state(0);
   let hover = $state<number | null>(null);
   let showTable = $state(false);
   const pad = { l: 48, r: 12, t: 12, b: 26 };
@@ -56,7 +57,7 @@
     </div>
   {:else}
     <div class="plot" bind:clientWidth={width}>
-      <svg {width} {height} role="img" aria-label={title} onpointermove={move} onpointerdown={move} onpointerleave={() => (hover = null)}>
+      {#if width > 0}<svg {width} {height} role="img" aria-label={title} onpointermove={move} onpointerdown={move} onpointerleave={() => (hover = null)}>
         <defs>
           <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stop-color={color} stop-opacity="0.22" />
@@ -79,7 +80,7 @@
           <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} class="cross" />
           <circle cx={x(hover)} cy={y(values[hover]!)} r="5" fill={color} stroke="var(--surface)" stroke-width="2" />
         {/if}
-      </svg>
+      </svg>{/if}
       {#if hover !== null}
         <div class="tip" style:left="{Math.min(Math.max(x(hover), 80), width - 80)}px">
           <strong>{labels[hover]}</strong><span class="num">{format(values[hover] ?? 0)}</span>
@@ -90,8 +91,8 @@
 </figure>
 
 <style>
-  .chart { margin: 0; }
-  .plot { position: relative; width: 100%; }
+  .chart { margin: 0; min-width: 0; }
+  .plot { position: relative; width: 100%; min-width: 0; overflow: hidden; min-height: 40px; }
   svg { display: block; overflow: visible; touch-action: pan-y; }
   .grid { stroke: var(--border); }
   .cross { stroke: var(--border-strong); stroke-dasharray: 3 3; }

@@ -110,3 +110,24 @@ test('works offline after the first visit', async ({ page, context, browserName 
   await expect(page.locator('main li button.row').first()).toBeVisible({ timeout: 30_000 });
   await context.setOffline(false);
 });
+
+test('every Reports tab fits a phone screen and is accessible', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openDemo(page);
+  await page.goto('app/#/reports');
+  for (const tab of ['Overview', 'Table', 'Account', 'Prices', 'Stats']) {
+    await page.getByRole('tab', { name: tab }).click();
+    await page.waitForTimeout(800);
+    const { sw, vw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth }));
+    expect(sw, `${tab} overflows horizontally`).toBeLessThanOrEqual(vw);
+    expect((await axe(page).analyze()).violations, `${tab} axe`).toEqual([]);
+  }
+});
+
+test('expense breakdown drills into categories', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/reports');
+  await page.getByRole('tab', { name: 'Overview' }).click();
+  await page.getByRole('button', { name: /^rent/ }).click();
+  await expect(page).toHaveURL(/#\/account\/expenses:rent/);
+});

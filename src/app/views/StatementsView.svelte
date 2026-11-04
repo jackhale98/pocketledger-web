@@ -3,7 +3,7 @@
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
   import { settings } from '../state/settings.svelte';
-  import { href } from '../state/router.svelte';
+  import { href, router } from '../state/router.svelte';
   import { PRESETS, presetRange, columnLabel, type PresetId } from '../lib/periods';
   import Money from '../components/Money.svelte';
   import ValueIn from '../components/ValueIn.svelte';
@@ -15,7 +15,10 @@
     { id: 'is', label: 'Income statement' },
     { id: 'cf', label: 'Cash flow' },
   ];
-  let kind = $state<Kind>('bs');
+  const q = router.route.query;
+  let kind = $state<Kind>((['bs', 'is', 'cf'] as const).find((k) => k === q.get('kind')) ?? 'bs');
+  // A specific period from a link (e.g. a tapped bar on the dashboard).
+  let fixed = $state<{ begin: string; end: string } | null>(q.get('begin') && q.get('end') ? { begin: q.get('begin')!, end: q.get('end')! } : null);
   let preset = $state<PresetId>('this-year');
   let interval = $state<'' | Interval>('');
   let depth = $state(2);
@@ -25,7 +28,7 @@
   $effect(() => {
     const rev = app.revision;
     const opts = {
-      period: { ...presetRange(preset), ...(interval ? { interval } : {}) },
+      period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) },
       depth,
       ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}),
     };
@@ -52,8 +55,12 @@
 </div>
 
 <div class="controls">
+  {#if fixed}
+    <span class="badge ok">{fixed.begin} – {fixed.end}</span>
+    <button class="btn small ghost" type="button" onclick={() => (fixed = null)}>Clear</button>
+  {/if}
   <label class="ctl"><span>Period</span>
-    <select class="input" bind:value={preset}>{#each PRESETS as p (p.id)}<option value={p.id}>{p.label}</option>{/each}</select>
+    <select class="input" bind:value={preset} onchange={() => (fixed = null)}>{#each PRESETS as p (p.id)}<option value={p.id}>{p.label}</option>{/each}</select>
   </label>
   <label class="ctl"><span>Columns</span>
     <select class="input" bind:value={interval}>

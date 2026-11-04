@@ -14,9 +14,11 @@
     prefix = '',
     height = 220,
     title,
-  }: { labels: string[]; series: Series[]; format?: (v: number) => string; prefix?: string; height?: number; title: string } = $props();
+    onpick,
+  }: { labels: string[]; series: Series[]; format?: (v: number) => string; prefix?: string; height?: number; title: string; onpick?: (i: number) => void } = $props();
 
-  let width = $state(600);
+  // Starts at 0 so the chart never props its container open; it renders once measured.
+  let width = $state(0);
   let hover = $state<number | null>(null);
   let showTable = $state(false);
 
@@ -45,14 +47,14 @@
         <thead><tr><th scope="col">Period</th>{#each series as s (s.name)}<th scope="col">{s.name}</th>{/each}</tr></thead>
         <tbody>
           {#each labels as l, i (l + i)}
-            <tr><th scope="row">{l}</th>{#each series as s (s.name)}<td class="num">{format(s.values[i] ?? 0)}</td>{/each}</tr>
+            <tr><th scope="row">{#if onpick}<button type="button" class="link" onclick={() => onpick?.(i)}>{l}</button>{:else}{l}{/if}</th>{#each series as s (s.name)}<td class="num">{format(s.values[i] ?? 0)}</td>{/each}</tr>
           {/each}
         </tbody>
       </table>
     </div>
   {:else}
     <div class="plot" bind:clientWidth={width}>
-      <svg {width} {height} role="img" aria-label={title} onpointerleave={() => (hover = null)}>
+      {#if width > 0}<svg {width} {height} role="img" aria-label={title} onpointerleave={() => (hover = null)}>
         {#each ticks as t (t)}
           <line x1={pad.l} x2={width - pad.r} y1={y(t)} y2={y(t)} class:zero={t === 0} class="grid" />
           <text x={pad.l - 6} y={y(t)} dy="0.32em" text-anchor="end" class="tick">{compact(t, prefix)}</text>
@@ -75,6 +77,7 @@
           {#if i % labelEvery === 0}
             <text x={gx + group / 2} y={height - 8} text-anchor="middle" class="tick">{l}</text>
           {/if}
+          <!-- svelte-ignore a11y_click_events_have_key_events (keyboard users use the Table view) -->
           <rect
             x={gx}
             y={pad.t}
@@ -84,14 +87,17 @@
             role="presentation"
             onpointerenter={() => (hover = i)}
             onpointerdown={() => (hover = i)}
+            onclick={() => onpick?.(i)}
+            style:cursor={onpick ? 'pointer' : undefined}
           />
         {/each}
-      </svg>
+      </svg>{/if}
       {#if hover !== null}
         {@const left = Math.min(Math.max(pad.l + hover * group + group / 2, 90), width - 90)}
         <div class="tip" style:left="{left}px">
           <strong>{labels[hover]}</strong>
           {#each series as s (s.name)}<div><i style:background={s.color}></i>{s.name}<span class="num">{format(s.values[hover] ?? 0)}</span></div>{/each}
+          {#if onpick}<small class="hint">Tap for details</small>{/if}
         </div>
       {/if}
     </div>
@@ -99,8 +105,8 @@
 </figure>
 
 <style>
-  .chart { margin: 0; }
-  .plot { position: relative; width: 100%; }
+  .chart { margin: 0; min-width: 0; }
+  .plot { position: relative; width: 100%; min-width: 0; overflow: hidden; min-height: 40px; }
   svg { display: block; overflow: visible; touch-action: pan-y; }
   .grid { stroke: var(--border); stroke-width: 1; }
   .grid.zero { stroke: var(--border-strong); }
@@ -117,6 +123,7 @@
   }
   .tip div { display: flex; align-items: center; gap: 6px; color: var(--text-2); }
   .tip .num { margin-left: auto; color: var(--text); font-weight: 600; padding-left: 12px; }
+  .hint { color: var(--text-3); font-size: 0.72rem; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }

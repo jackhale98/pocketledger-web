@@ -1,5 +1,5 @@
 // Date range presets, as hledger begin (inclusive) / end (exclusive) dates.
-export type PresetId = 'all' | 'this-month' | 'last-month' | 'last-3' | 'this-year' | 'last-year' | 'last-12' | 'custom';
+export type PresetId = 'all' | 'this-month' | 'last-month' | 'last-3' | 'last-6' | 'this-year' | 'last-year' | 'last-12' | 'custom';
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const monthStart = (y: number, m: number) => iso(new Date(y, m, 1));
@@ -21,6 +21,7 @@ export function presetRange(id: PresetId, today = new Date()): { begin?: string;
     case 'this-month': return { begin: monthStart(y, m), end: monthStart(y, m + 1) };
     case 'last-month': return { begin: monthStart(y, m - 1), end: monthStart(y, m) };
     case 'last-3': return { begin: monthStart(y, m - 2), end: monthStart(y, m + 1) };
+    case 'last-6': return { begin: monthStart(y, m - 5), end: monthStart(y, m + 1) };
     case 'this-year': return { begin: `${y}-01-01`, end: `${y + 1}-01-01` };
     case 'last-year': return { begin: `${y - 1}-01-01`, end: `${y}-01-01` };
     case 'last-12': return { begin: monthStart(y, m - 11), end: monthStart(y, m + 1) };
@@ -37,6 +38,9 @@ export function columnLabel(begin: string, end: string): string {
   if (d === 1 && months === 1) return `${MONTHS[m - 1]} ${String(y).slice(2)}`;
   if (d === 1 && months === 3) return `Q${Math.floor((m - 1) / 3) + 1} ${String(y).slice(2)}`;
   if (d === 1 && m === 1 && months === 12) return String(y);
+  const days = Math.round((Date.parse(end) - Date.parse(begin)) / 86400000);
+  if (days === 7) return `${MONTHS[m - 1]} ${d}`;
+  if (days === 1) return `${d} ${MONTHS[m - 1]}`;
   return begin.slice(5);
 }
 
