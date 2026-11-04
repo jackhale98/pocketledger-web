@@ -1,0 +1,15 @@
+{
+  "name": "pocketledger-proxy-worker",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Optional CORS proxy (git smart-HTTP) and GitHub OAuth code exchange for PocketLedger. Stateless; no logging.",
+  "scripts": {
+    "build": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.3"
+  }
+}
