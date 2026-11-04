@@ -1,0 +1,39 @@
+cabal-version:      2.4
+name:               hledger-wasm
+version:            1.52.4.0
+synopsis:           hledger 1.52.4 CLI as a wasm32-wasi reactor module
+description:
+  pocketledger-web's engine, Option B. Exposes hledger's own command line
+  (option parsing, config file, command dispatch, every builtin command) to
+  JavaScript through three JSFFI exports, and keeps the parsed journal in
+  memory between calls. See engine/RESULTS.md.
+-- Links hledger and hledger-lib (GPL-3.0-or-later).
+license:            GPL-3.0-or-later
+build-type:         Simple
+
+executable hledger-reactor
+  main-is:          Bindings.hs
+  hs-source-dirs:   src
+  other-modules:
+    CliMain
+    Capture
+  c-sources:        cbits/capture.c cbits/rtsopts.c
+  default-language: GHC2021
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cmdargs
+    , containers
+    , ghc-experimental
+    , hledger
+    , hledger-lib
+    , megaparsec
+    , process
+    , safe
+    , text
+    , time
+  ghc-options:
+    -Wall -Wno-name-shadowing -Wno-unused-do-bind
+    -optl-mexec-model=reactor
+    -optl-Wl,--export=hs_init
