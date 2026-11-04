@@ -21,7 +21,8 @@ if (existsSync(wasmSrc) && !existsSync(wasmVersioned)) copyFileSync(wasmSrc, was
 if (!existsSync(wasmSrc))
   console.warn('[pocketledger] public/wasm/hledger.wasm is missing: run `npm run fetch:engine`.');
 
-const gitProxy = process.env.PUBLIC_GIT_PROXY ?? 'https://pocketledger-proxy.jackhale98.workers.dev';
+// Must match DEFAULT_GIT_PROXY in src/lib/config.ts (a placeholder until a worker is deployed).
+const gitProxy = process.env.PUBLIC_GIT_PROXY || 'https://pocketledger-proxy.example.workers.dev';
 const extraConnect = (process.env.PUBLIC_CSP_CONNECT_EXTRA ?? '').split(/\s+/).filter(Boolean);
 const origin = (/** @type {string} */ u) => {
   try {
@@ -111,7 +112,6 @@ export default defineConfig({
         hledger: lockValue('hledger_version'),
         flavor: lockValue('flavor'),
       }),
-      __GIT_PROXY__: JSON.stringify(gitProxy),
       __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version),
     },
   },

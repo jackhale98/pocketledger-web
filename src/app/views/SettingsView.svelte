@@ -10,6 +10,7 @@
   import Icon from '../components/Icon.svelte';
   import Sheet from '../components/Sheet.svelte';
   import SyncSettings from '../components/SyncSettings.svelte';
+  import Connect from '../components/Connect.svelte';
 
   let addOpen = $state(router.route.query.get('add') === '1');
   let newOpen = $state(false);
@@ -186,6 +187,8 @@
   {/if}
   <p class="muted small">PocketLedger is free software (GPL-3.0-or-later) and bundles hledger by Simon Michael and contributors. <a href="https://github.com/jackhale98/pocketledger-web">Source code</a></p>
 </section>
+
+<Connect />
 
 <Sheet bind:open={addOpen} title="Add a journal">
   <div class="choices">

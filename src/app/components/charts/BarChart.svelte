@@ -65,12 +65,12 @@
             {@const v = s.values[i] ?? 0}
             {@const top = Math.min(y(v), y(0))}
             {@const h = Math.max(v === 0 ? 0 : 1, Math.abs(y(v) - y(0)))}
-            <path
+            {#if v !== 0}<path
               d={v >= 0
                 ? `M${gx + (group - inner) / 2 + k * (barW + 2)},${top + h} v${-Math.max(0, h - 4)} q0,-4 4,-4 h${barW - 8} q4,0 4,4 v${Math.max(0, h - 4)} z`
                 : `M${gx + (group - inner) / 2 + k * (barW + 2)},${top} v${Math.max(0, h - 4)} q0,4 4,4 h${barW - 8} q4,0 4,-4 v${-Math.max(0, h - 4)} z`}
               fill={s.color}
-            />
+            />{/if}
           {/each}
           {#if i % labelEvery === 0}
             <text x={gx + group / 2} y={height - 8} text-anchor="middle" class="tick">{l}</text>

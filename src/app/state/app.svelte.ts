@@ -5,12 +5,13 @@
 
 import type { AccountInfo, CommodityInfo, EngineError, JournalStats, Txn, VaultSnapshot } from '$lib/contracts/engine';
 import type { Patch, TxnDraft } from '$lib/contracts/writer';
-import type { StoredFile, VaultRecord, VaultStore } from '$lib/contracts/storage';
+import type { VaultRecord, VaultStore } from '$lib/contracts/storage';
 import { createEngineClient, EngineCallError, type EngineClient } from '$lib/engine/client';
 import { makeSnapshot, guessRootFile, isEngineFile } from '$lib/vault';
 import { demoFiles } from '$lib/vault/demo';
 import { writer } from '$lib/journal/writer';
 import { vaultStore } from '$lib/store';
+import { saveLocal } from '$lib/sync';
 import { settings } from './settings.svelte';
 import { toasts } from './toast.svelte';
 
@@ -287,26 +288,8 @@ export class AppState {
 
   private async persist(next: Record<string, string>, changed: string[]) {
     if (!this.store || !this.vault || this.vault.provider === 'demo') return;
-    const vaultId = this.vault.id;
-    const existing = new Map((await this.store.listFiles(vaultId)).map((f) => [f.path, f]));
-    const out: StoredFile[] = [];
-    for (const path of changed) {
-      const prev = existing.get(path);
-      const text = next[path];
-      if (text == null) {
-        if (prev) out.push({ ...prev, deleted: true, dirty: true, modifiedAt: Date.now() });
-      } else
-        out.push({
-          vaultId,
-          path,
-          text,
-          base: prev?.base ?? null,
-          baseRev: prev?.baseRev ?? null,
-          dirty: true,
-          modifiedAt: Date.now(),
-        });
-    }
-    await this.store.putFiles(out);
+    // saveLocal keeps the three-way-merge base, sets dirty flags and tombstones.
+    await saveLocal(this.store, this.vault.id, changed.map((path) => ({ path, text: next[path] ?? null })));
   }
 
   async undo() {

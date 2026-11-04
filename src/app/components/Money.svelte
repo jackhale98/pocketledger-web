@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { MixedAmount } from '$lib/contracts/amount';
-  import { formatAmount, isNegative, isZero } from '$lib/engine/decimal';
+  import { formatAmount, isNegative, isZero, sumMixed } from '$lib/engine/decimal';
 
   let {
     value,
@@ -11,7 +11,8 @@
     zero = '0',
   }: { value: MixedAmount; color?: boolean; invert?: boolean; signed?: boolean; precision?: number; zero?: string } = $props();
 
-  const shown = $derived(value.filter((a) => !isZero(a.quantity)));
+  // One line per commodity, as hledger displays it (lots with different costs are summed).
+  const shown = $derived(sumMixed(value).filter((a) => !isZero(a.quantity)));
 </script>
 
 <span class="money amount">

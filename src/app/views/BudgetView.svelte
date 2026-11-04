@@ -123,7 +123,7 @@
         <span class="name">{l.account.replace(/^expenses?:/i, '')}</span>
         <span class="vals num"><strong class:neg={l.pct > 100}>{f(l.commodity, l.actual)}</strong> <span class="muted">/ {f(l.commodity, l.budget)}</span></span>
         <span class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(l.pct)} aria-label="{l.account}: {Math.round(l.pct)}% of budget">
-          <span class="fill" class:warn={l.pct > 85 && l.pct <= 100} class:over={l.pct > 100} style:width="{Math.min(100, l.pct)}%"></span>
+          <span class="fill" class:warn={l.pct > 85 && l.pct < 100} class:over={l.pct > 100} style:width="{Math.min(100, l.pct)}%"></span>
           {#if elapsed > 0 && elapsed < 1}<span class="today" style:left="{elapsed * 100}%"></span>{/if}
         </span>
         <span class="state small">

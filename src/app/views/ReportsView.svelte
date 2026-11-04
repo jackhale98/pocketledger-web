@@ -45,13 +45,17 @@
     })();
   });
 
-  const worthSeries = $derived(worth ? worth.totals.amounts.map((m) => numberIn(m, commodity)) : []);
-  const worthLabels = $derived(worth ? worth.columns.map((c) => columnLabel(c.begin, c.end)) : []);
+  // Skip columns that end before the journal's first transaction.
+  const first = $derived(app.stats?.firstDate ?? '');
+  const skipW = $derived(worth ? Math.max(0, worth.columns.findIndex((c) => c.end > first)) : 0);
+  const worthSeries = $derived(worth ? worth.totals.amounts.slice(skipW).map((m) => numberIn(m, commodity)) : []);
+  const worthLabels = $derived(worth ? worth.columns.slice(skipW).map((c) => columnLabel(c.begin, c.end)) : []);
   const revenue = $derived(flows?.sections.find((s) => s.increasesTotal) ?? flows?.sections[0]);
   const expense = $derived(flows?.sections.find((s) => !s.increasesTotal) ?? flows?.sections[1]);
-  const incomeVals = $derived(revenue ? revenue.report.totals.amounts.map((m) => numberIn(m, commodity)) : []);
-  const expenseVals = $derived(expense ? expense.report.totals.amounts.map((m) => numberIn(m, commodity)) : []);
-  const flowLabels = $derived(flows ? flows.columns.map((c) => columnLabel(c.begin, c.end)) : []);
+  const skipF = $derived(flows ? Math.max(0, flows.columns.findIndex((c) => c.end > first)) : 0);
+  const incomeVals = $derived(revenue ? revenue.report.totals.amounts.slice(skipF).map((m) => numberIn(m, commodity)) : []);
+  const expenseVals = $derived(expense ? expense.report.totals.amounts.slice(skipF).map((m) => numberIn(m, commodity)) : []);
+  const flowLabels = $derived(flows ? flows.columns.slice(skipF).map((c) => columnLabel(c.begin, c.end)) : []);
   const breakdownItems = $derived(
     breakdown
       ? breakdown.rows

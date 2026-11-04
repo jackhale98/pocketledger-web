@@ -1,0 +1,22 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+
+<Base title="Signing in… — PocketLedger">
+  <main style="display:grid;place-content:center;min-height:100dvh;gap:12px;text-align:center;padding:24px">
+    <p id="msg">Finishing sign-in…</p>
+    <p><a id="back" href="../../app/">Back to PocketLedger</a></p>
+  </main>
+</Base>
+
+<script>
+  import { completeSignIn } from '../../../lib/auth';
+  import { authConfig } from '../../../lib/config';
+  completeSignIn(location.search, authConfig()).then(
+    ({ returnTo }) => location.replace(returnTo),
+    (e: Error) => {
+      const msg = document.getElementById('msg');
+      if (msg) msg.textContent = `Sign-in failed: ${e.message}`;
+    },
+  );
+</script>

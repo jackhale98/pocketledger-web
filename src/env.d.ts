@@ -8,5 +8,4 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 declare const __ENGINE__: { file: string; sha256: string; hledger: string; flavor: string };
-declare const __GIT_PROXY__: string;
 declare const __APP_VERSION__: string;
