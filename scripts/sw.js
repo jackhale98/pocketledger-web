@@ -8,7 +8,8 @@
 
 const VERSION = '__VERSION__';
 const FILES = __FILES__;
-const ENGINE = '__ENGINE__'; // array of engine files (wasm + glue)
+/** Engine files (wasm + glue), content-addressed. */
+const ENGINE = '__ENGINE__';
 const SHELL = `pl-shell-${VERSION}`;
 const ENGINE_CACHE = 'pl-engine';
 const NETWORK_WAIT = 3500;

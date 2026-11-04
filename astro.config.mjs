@@ -74,9 +74,9 @@ const offlineApp = {
       await writeFile(
         new URL('sw.js', dir),
         template
-          .replace("'__VERSION__'", `'${hash.digest('hex').slice(0, 16)}'`)
-          .replace('__FILES__', JSON.stringify(paths))
-          .replace("'__ENGINE__'", JSON.stringify(reactorOk ? [`wasm/${reactorFile}`, `wasm/${jsffiFile}`] : [`wasm/${engineFile}`])),
+          .replace("const VERSION = '__VERSION__';", `const VERSION = '${hash.digest('hex').slice(0, 16)}';`)
+          .replace('const FILES = __FILES__;', `const FILES = ${JSON.stringify(paths)};`)
+          .replace("const ENGINE = '__ENGINE__';", () => `const ENGINE = ${ JSON.stringify(reactorOk ? [`wasm/${reactorFile}`, `wasm/${jsffiFile}`] : [`wasm/${engineFile}`])};`),
       );
     },
   },
