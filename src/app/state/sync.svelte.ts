@@ -6,7 +6,6 @@ import type { FileConflict, SyncProvider, SyncResult, VaultRecord } from '$lib/c
 import { VaultSyncEngine, SyncScheduler, pendingCount, localTexts } from '$lib/sync';
 import { DropboxProvider } from '$lib/dropbox';
 import { GitHubRestProvider, githubSecretKey } from '$lib/git';
-import { openGitWorkspace } from '$lib/git/browser';
 import type { IsoGitWorkspace } from '$lib/git/workspace';
 import { TabCoordinator } from '$lib/pwa/tabs';
 import { dropboxAppKey } from '$lib/config';
@@ -123,6 +122,7 @@ async function attach(vault: VaultRecord) {
     } else if (vault.provider === 'github' && vault.remote?.kind === 'github' && vault.remote.transport === 'rest') {
       provider = GitHubRestProvider.fromRemote(vault.remote, () => token(vault.id));
     } else if (vault.provider === 'github') {
+      const { openGitWorkspace } = await import('$lib/git/browser');
       gitWs = openGitWorkspace(vault, () => token(vault.id), { validate: (files) => validate(files, vault) });
       await refreshGit();
       return;

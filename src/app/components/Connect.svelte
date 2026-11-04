@@ -6,7 +6,6 @@
   import { authConfig, dropboxAppKey, gitProxy, gitProxyIsPlaceholder } from '$lib/config';
   import { DropboxProvider, DropboxSession } from '$lib/dropbox';
   import { GitHubRestProvider, githubSecretKey } from '$lib/git';
-  import { openGitWorkspace } from '$lib/git/browser';
   import { VaultSyncEngine, localTexts } from '$lib/sync';
   import { guessRootFile, isEngineFile } from '$lib/vault';
   import { app } from '../state/app.svelte';
@@ -131,6 +130,7 @@
       if (transport === 'rest') {
         await new VaultSyncEngine({ store: store() }).sync(rec, GitHubRestProvider.fromRemote(rec.remote as never, token));
       } else {
+        const { openGitWorkspace } = await import('$lib/git/browser');
         const ws = openGitWorkspace(rec, token);
         await ws.clone();
         const files = await ws.readFiles();
