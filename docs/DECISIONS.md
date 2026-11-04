@@ -160,3 +160,23 @@ negative left-side amounts are written `$-12.50`, as `hledger print` does.
 - WebKit e2e runs in CI only (no WebKit in the dev container).
 - OneDrive / WebDAV (§8.2 later), GitHub OAuth sign-in UI (the worker and
   `src/lib/auth` support it; the app currently uses a personal access token).
+
+## D-018 Saves also validate periodic rules
+
+hledger only checks a periodic (`~`) rule when it generates transactions from
+it (`--forecast` / `--budget`), so a plain parse accepts an unbalanced rule.
+When any vault file contains a rule, the save pipeline additionally runs
+`hledger check -I --forecast=<two years either side of today>` and refuses the
+save on failure. This covers the Forecast rule editor, the Files view and
+text edits alike.
+
+## D-019 Reports hub (PocketLedger parity)
+
+Reports has tabs Overview, Table, Account, Forecast, Prices and Stats with one
+shared filter bar (period presets or custom range, an hledger query applied to
+every report, Value in; chart interval and forecast on Overview). Returns use
+`hledger roi --inv <acct> --pnl type:RX --value=end,<C> --infer-market-prices`
+(text output, parsed), shown only for accounts holding a commodity other than
+the valuation one — PocketLedger's rule. Prices come from `hledger prices
+--infer-market-prices` (P directives and costs). Statistics combine hledger's
+`stats` text with activity computed from the transaction list.

@@ -7,11 +7,13 @@
   import AccountTab from './reports/AccountTab.svelte';
   import PricesTab from './reports/PricesTab.svelte';
   import StatsTab from './reports/StatsTab.svelte';
+  import ForecastTab from './reports/ForecastTab.svelte';
 
   const TABS: [ReportTab, string][] = [
     ['overview', 'Overview'],
     ['table', 'Table'],
     ['account', 'Account'],
+    ['forecast', 'Forecast'],
     ['prices', 'Prices'],
     ['stats', 'Stats'],
   ];
@@ -27,11 +29,13 @@
   {/each}
 </div>
 
-<FilterBar interval={f.tab === 'overview' || f.tab === 'account'} forecast={f.tab === 'overview'} />
+<!-- Forecast has its own horizon; a date filter would clip the projection. -->
+<FilterBar interval={f.tab === 'overview' || f.tab === 'account'} forecast={f.tab === 'overview'} period={f.tab !== 'forecast'} />
 
 <div id="rp" role="tabpanel" aria-labelledby="rt-{f.tab}" class="panel">
   {#if f.tab === 'table'}<TableTab />
   {:else if f.tab === 'account'}<AccountTab />
+  {:else if f.tab === 'forecast'}<ForecastTab query={f.words} />
   {:else if f.tab === 'prices'}<PricesTab />
   {:else if f.tab === 'stats'}<StatsTab />
   {:else}<OverviewTab />{/if}

@@ -29,6 +29,12 @@ interface UndoEntry {
 }
 
 const DEMO_ID = 'demo';
+
+/** Two years either side of today: wide enough to exercise every periodic rule's postings. */
+function forecastWindow(today = new Date()) {
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  return `${iso(new Date(today.getFullYear() - 2, today.getMonth(), 1))}..${iso(new Date(today.getFullYear() + 2, today.getMonth(), 1))}`;
+}
 const LAST_VAULT = 'pl:lastVault';
 
 function payeeOf(t: Txn): string {
@@ -272,6 +278,13 @@ export class AppState {
         throw new SaveError(r.errors);
       }
       stats = r.stats;
+      // Periodic (~) rules are only checked by hledger when it generates from them,
+      // so validate them over a window around today whenever any file has one.
+      const forecastErrs = Object.values(snap.files).some((t) => /^~/m.test(t)) ? await this.engine.check(snap, ['-I', `--forecast=${forecastWindow()}`]) : [];
+      if (forecastErrs.length) {
+        await this.engine.load(makeSnapshot(this.files, this.vault.rootFile));
+        throw new SaveError(forecastErrs);
+      }
       const strict = settings.v.strictChecks;
       if (strict.length) {
         const errs = await this.engine.check(snap, strict);

@@ -115,7 +115,7 @@ test('every Reports tab fits a phone screen and is accessible', async ({ page })
   await page.setViewportSize({ width: 375, height: 812 });
   await openDemo(page);
   await page.goto('app/#/reports');
-  for (const tab of ['Overview', 'Table', 'Account', 'Prices', 'Stats']) {
+  for (const tab of ['Overview', 'Table', 'Account', 'Forecast', 'Prices', 'Stats']) {
     await page.getByRole('tab', { name: tab }).click();
     await page.waitForTimeout(800);
     const { sw, vw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth }));

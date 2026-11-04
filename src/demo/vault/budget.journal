@@ -1,5 +1,5 @@
-; Monthly budget goals (periodic transactions). See Budget.
-~ monthly from 2026-05
+; Periodic transactions: budget goals (see Budget) and the forecast (Reports → Forecast).
+~ monthly from 2026-05  Monthly spending
     expenses:rent             $1,650.00
     expenses:groceries          $520.00
     expenses:dining             $220.00
@@ -7,4 +7,16 @@
     expenses:transport          $120.00
     expenses:utilities          $160.00
     expenses:subscriptions       $40.00
+    assets:checking
+
+~ every 15th day of month from 2026-05  Acme Corp | Salary
+    assets:checking           $3,200.00
+    income:salary
+
+~ every 28th day of month from 2026-05  Acme Corp | Salary
+    assets:checking           $3,200.00
+    income:salary
+
+~ monthly from 2026-05  Transfer to savings
+    assets:savings              $400.00
     assets:checking

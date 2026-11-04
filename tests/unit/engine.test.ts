@@ -98,6 +98,17 @@ describe.skipIf(!hasWasm)('HledgerEngine', () => {
     expect((await e.transactions())[0]!.description).toBe('Opening Balance');
   });
 
+  it('catches an unbalanced periodic rule only when forecasting (as the save pipeline does)', async () => {
+    const e = await makeEngine();
+    const bad = snapshot({ 'main.journal': '~ monthly from 2026-01\n    expenses:rent  $100\n    assets:bank  $-90\n\n2026-01-05 x\n    a  $1\n    b\n' });
+    expect(await e.check(bad)).toEqual([]);
+    const errs = await e.check(bad, ['-I', '--forecast=2025-01-01..2028-01-01']);
+    expect(errs.length).toBe(1);
+    expect(errs[0]!.message).toMatch(/unbalanced|balance/i);
+    const good = snapshot({ 'main.journal': '~ monthly from 2026-01\n    expenses:rent  $100\n    assets:bank\n' });
+    expect(await e.check(good, ['-I', '--forecast=2025-01-01..2028-01-01'])).toEqual([]);
+  });
+
   it('produces statements, budgets and registers', async () => {
     const e = await makeEngine();
     await e.load(snapshot({ 'main.journal': fixture('sample-with-budget.journal') }));
