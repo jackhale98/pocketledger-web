@@ -1,0 +1,19 @@
+# Pinned hledger WebAssembly engine. Single source of truth for which hledger
+# binary the app runs. Read by engine/scripts/fetch.sh (download + sha256 check)
+# and by astro.config.mjs (versioned asset name, engine version in Settings).
+#
+# Keep the flat `key = "value"` form: a tiny awk/regex parser reads it.
+#
+# flavor: "hledger-cli" = the real hledger executable built for wasm32-wasi,
+#         invoked as a WASI command (Option A, see docs/DECISIONS.md D-001).
+#
+# Provenance: built from unmodified hledger 1.52.4 with ghc-wasm-meta (GHC 9.12)
+# by lc-at/hledger-anywhere (GPL-3.0). engine.yml reproduces the build for this
+# repository; when it publishes our own release asset, update url/sha256/size.
+
+flavor = "hledger-cli"
+hledger_version = "1.52.4"
+ghc_version = "9.12"
+size = "13194161"
+sha256 = "acd7c4e955b1191a23afc5171508cba960cf8311cf5f8fb8a9f62f50659e4178"
+url = "https://github.com/lc-at/hledger-anywhere/releases/download/wasm-v2/hledger.wasm"

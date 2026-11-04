@@ -1,0 +1,19 @@
+import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { fileURLToPath } from 'node:url';
+
+export default defineConfig({
+  plugins: [svelte({ hot: false })],
+  resolve: {
+    alias: {
+      $lib: fileURLToPath(new URL('./src/lib', import.meta.url)),
+      $app: fileURLToPath(new URL('./src/app', import.meta.url)),
+    },
+  },
+  test: {
+    include: ['tests/unit/**/*.test.ts', 'tests/fidelity/**/*.test.ts', 'tests/golden/**/*.test.ts', 'src/**/*.test.ts'],
+    environment: 'node',
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
+  },
+});

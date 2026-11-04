@@ -1,0 +1,45 @@
+{
+  "name": "pocketledger-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A mobile-first, offline-capable PWA for hledger journals, running the real hledger compiled to WebAssembly in your browser.",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "fetch:engine": "sh engine/scripts/fetch.sh",
+    "check": "astro check && svelte-check --tsconfig ./tsconfig.json --threshold error",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "golden": "node scripts/golden.mjs",
+    "bench:engine": "node scripts/bench-engine.mjs",
+    "size": "node scripts/size-check.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "fake-indexeddb": "^6.2.7",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^9.1.2",
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "@isomorphic-git/lightning-fs": "^4.10.5",
+    "astro": "^7.4.5",
+    "buffer": "^6.0.3",
+    "decimal.js-light": "^2.5.1",
+    "isomorphic-git": "^1.44.10",
+    "node-diff3": "^3.2.1",
+    "svelte": "^5.57.3"
+  }
+}

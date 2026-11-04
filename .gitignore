@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+coverage/
+test-results/
+playwright-report/
+.env
+.env.*
+.DS_Store
+public/wasm/*.wasm
+public/wasm/*.download
+engine/artifacts/
+engine/vendor/
+engine/.tools/
+.claude/worktrees/
