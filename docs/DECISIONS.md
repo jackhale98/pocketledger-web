@@ -134,14 +134,14 @@ balance assertion is appended on the statement date.
 
 `tests/golden/expected/*.out.gz` (450 KB instead of 6.4 MB).
 
-## D-015 Hosting the reactor artifact **(deviation)**
+## D-015 Hosting the reactor artifact
 
-The reactor `.wasm` and its JSFFI glue are pinned by sha256 in
-`engine/wasm.lock` but `reactor_url` is empty: no release asset exists yet.
-`fetch.sh` uses a verified local build (`engine/artifacts/`) or the URL once
-`engine.yml` has published one, and otherwise leaves the reactor out, in which
-case the build ships the CLI engine only. The artifact is deliberately not
-committed to git (13 MB per version).
+The reactor `.wasm` and its JSFFI glue are published by `engine.yml` as the
+GitHub release `engine-v1.52.4` and pinned in `engine/wasm.lock` by URL and
+sha256 (`d0b16752…`). CI builds are byte-reproducible run to run; a local
+build differs by a few bytes, so the release is what is pinned. A manual
+`engine` run with a `release` tag publishes a new release; tag pushes do the
+same. The artifact is not committed to git (13 MB per version).
 
 ## D-016 Writer contract clarifications
 

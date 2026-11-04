@@ -20,11 +20,11 @@ url = "https://github.com/lc-at/hledger-anywhere/releases/download/wasm-v2/hledg
 
 # Option B: hledger as a reactor module (parse once, many reports). Built by
 # engine/scripts/build.sh / engine.yml from hledger commit 33fa849e (1.52.4).
-# Used when a verified copy is available (public/wasm/hledger-reactor.wasm);
-# otherwise the app falls back to the CLI module above. reactor_url is empty
-# until engine.yml publishes a release asset (see docs/DECISIONS.md D-015).
-reactor_url = ""
-reactor_jsffi_url = ""
-reactor_sha256 = "a581c3e898e685561a79b9a5c812393271d93d368c8472ed7da099f12af7fdd6"
+# Published by engine.yml as release engine-v1.52.4 (CI builds are reproducible;
+# a local build differs by a few bytes, so pin the release). The app falls back
+# to the CLI module above if the reactor is unavailable.
+reactor_url = "https://github.com/jackhale98/pocketledger-web/releases/download/engine-v1.52.4/hledger-reactor.wasm"
+reactor_jsffi_url = "https://github.com/jackhale98/pocketledger-web/releases/download/engine-v1.52.4/hledger-reactor.jsffi.mjs"
+reactor_sha256 = "d0b167521ec4547b4c972c628e424ced81c9b0d51a4dacd9c6a94af3f035d4f6"
 reactor_jsffi_sha256 = "acb55816a681ae098b33886c7b44fd5d33ded40393b295c1c1c5fc54473ed052"
-reactor_size = "13269254"
+reactor_size = "13269292"

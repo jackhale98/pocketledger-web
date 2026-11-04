@@ -53,9 +53,9 @@ freeze file; about 25 minutes cold); `engine/RESULTS.md` has the full
 measurements and the parity report (46/46 cases byte-identical to native,
 stdout, stderr and exit code).
 
-The app prefers the reactor when `public/wasm/hledger-reactor.wasm` and its
-JSFFI glue match `reactor_sha256` / `reactor_jsffi_sha256` in
-`engine/wasm.lock`; the worker falls back to the CLI module if the reactor
+The reactor is published as release `engine-v1.52.4`; `fetch.sh` downloads it
+and refuses it unless it matches `reactor_sha256` / `reactor_jsffi_sha256` in
+`engine/wasm.lock`. The app prefers the reactor; the worker falls back to the CLI module if the reactor
 fails to start. Every golden passes on both (`ENGINE=reactor npm test`).
 
 ## How it is invoked
