@@ -43,8 +43,8 @@ export interface QueryOpts {
   cleared?: boolean;
   pending?: boolean;
   unmarked?: boolean;
-  /** Include --forecast transactions (periodic rules). */
-  forecast?: boolean;
+  /** Include --forecast transactions from periodic rules. `true` = hledger's default horizon; a string is a period expression, e.g. "2026-11-04..2027-05-01". */
+  forecast?: boolean | string;
   /** Apply auto postings (--auto). */
   auto?: boolean;
   /** Use secondary dates (--date2). */

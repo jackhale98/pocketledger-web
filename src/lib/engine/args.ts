@@ -14,7 +14,7 @@ export function queryArgs(opts: QueryOpts = {}): string[] {
   if (opts.cleared) a.push('-C');
   if (opts.pending) a.push('-P');
   if (opts.unmarked) a.push('-U');
-  if (opts.forecast) a.push('--forecast');
+  if (opts.forecast) a.push(typeof opts.forecast === 'string' ? `--forecast=${opts.forecast}` : '--forecast');
   if (opts.auto) a.push('--auto');
   if (opts.date2) a.push('--date2');
   if (opts.accumulation === 'cumulative') a.push('--cumulative');
