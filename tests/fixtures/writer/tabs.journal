@@ -1,0 +1,12 @@
+2024-02-01 Tabs
+	expenses:food		$10.00
+	assets:cash
+
+2024-02-02 * Tab indented with comment	; note
+	; comment line
+	expenses:food		$4.50
+	assets:cash		$-4.50
+
+2024-02-03 Mixed
+	expenses:food 	$1.00
+	assets:cash

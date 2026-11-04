@@ -1,0 +1,80 @@
+; Writer fidelity fixture: comments everywhere, directives, rules.
+# hash comment at top level
+* org-style heading comment
+
+include included.journal
+
+alias checking = assets:bank:checking
+payee Grocery Mart
+tag project
+bucket assets:cash
+commodity $1,000.00
+commodity 1.000,00 EUR
+account assets:bank:checking   ; type:A
+account expenses:food
+
+P 2024-01-01 EUR $1.10
+
+comment
+2024-01-01 Not a transaction (inside a comment block)
+    expenses:food  $1
+end comment
+
+~ monthly  Budget
+    expenses:food        $400.00
+    assets:bank:checking
+
+= expenses:food
+    (budget:food)              *-1
+
+; Attached comment for the opening transaction
+2024-01-01 * Opening balance  ; opening:
+    ; a transaction comment line
+    assets:bank:checking            $5,000.00 = $5,000.00
+    equity:opening
+
+2024-01-03 ! (101) Grocery Mart | weekly shop  ;  tag1:a, tag2:b
+    expenses:food                      $82.17  ; receipt:yes
+    ; a second comment line for the posting
+    * assets:bank:checking            -$82.17
+
+2024-01-05=2024-01-07 Card payment
+    liabilities:card                  $120.00
+    assets:bank:checking
+
+2024-01-10 Exchange
+    assets:bank:eur                   100 EUR @ $1.10
+    assets:bank:checking
+
+2024-01-11 Exchange total
+    assets:bank:eur                    50 EUR @@ $56.00
+    assets:bank:checking
+
+2024-01-12 Buy shares
+    assets:broker:aapl     10 AAPL {$150.00} @ $150.00
+    assets:bank:checking            $-1,500.00
+
+2024-01-13 Virtual postings
+    expenses:food                       $5.00
+    assets:bank:checking
+    (budget:food)                      $-5.00
+    [savings:goal]                     $10.00
+    [assets:bank:checking]            $-10.00
+
+2024-01-14 Assertions
+    assets:bank:checking                   $0 == $3,248.83
+    assets:bank:eur                         0 EUR =* 150 EUR
+    equity:opening                          $0
+
+2024-01-15 Quoted commodity
+    assets:funds                   1.5 "VANGUARD FUND"
+    assets:bank:checking                  $-15.00
+
+2024-01-20 Balance assignment
+    assets:cash                            = $50.00
+    assets:bank:checking
+; trailing top-level comment
+2024-01-21 No description posting comment only
+    expenses:food                           $1.00
+    assets:cash
+    ; trailing posting comment
