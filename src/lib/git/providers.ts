@@ -2,6 +2,11 @@
 // GitHub (ProviderKind 'github'); any HTTPS smart-HTTP host works over the
 // proxy as long as the worker allow-lists it.
 
+import { vaultSecretKey } from '$lib/store/db';
+
+/** Where a git vault's token lives in the VaultStore's secrets store. */
+export const githubSecretKey = (vaultId: string) => vaultSecretKey(vaultId, 'github-token');
+
 export interface RepoLocation {
   /** HTTPS clone URL, `https://github.com/owner/repo.git`. */
   url: string;
