@@ -8,7 +8,7 @@
 
 const VERSION = '__VERSION__';
 const FILES = __FILES__;
-const ENGINE = '__ENGINE__';
+const ENGINE = '__ENGINE__'; // array of engine files (wasm + glue)
 const SHELL = `pl-shell-${VERSION}`;
 const ENGINE_CACHE = 'pl-engine';
 const NETWORK_WAIT = 3500;
@@ -24,13 +24,14 @@ self.addEventListener('install', (event) => {
       await cache.addAll(FILES.map(url));
       // Fetch the engine during install too, so the first offline open works.
       const engine = await caches.open(ENGINE_CACHE);
-      if (!(await engine.match(url(ENGINE)))) {
-        try {
-          await engine.add(url(ENGINE));
-        } catch {
-          /* fetched on first use instead */
+      for (const f of ENGINE)
+        if (!(await engine.match(url(f)))) {
+          try {
+            await engine.add(url(f));
+          } catch {
+            /* fetched on first use instead */
+          }
         }
-      }
     })(),
   );
 });
@@ -44,7 +45,8 @@ self.addEventListener('activate', (event) => {
     (async () => {
       for (const k of await caches.keys()) if (k.startsWith('pl-shell-') && k !== SHELL) await caches.delete(k);
       const engine = await caches.open(ENGINE_CACHE);
-      for (const req of await engine.keys()) if (req.url !== url(ENGINE)) await engine.delete(req);
+      const keep = new Set(ENGINE.map(url));
+      for (const req of await engine.keys()) if (!keep.has(req.url)) await engine.delete(req);
       await self.clients.claim();
     })(),
   );
@@ -96,6 +98,6 @@ self.addEventListener('fetch', (event) => {
   const u = new URL(request.url);
   if (u.origin !== scope.origin || !u.pathname.startsWith(scope.pathname)) return;
   if (u.pathname.startsWith(`${scope.pathname}auth/`)) return;
-  if (u.pathname.endsWith('.wasm')) return event.respondWith(engineFile(request));
+  if (u.pathname.includes('/wasm/')) return event.respondWith(engineFile(request));
   event.respondWith(request.mode === 'navigate' ? page(request) : file(request));
 });

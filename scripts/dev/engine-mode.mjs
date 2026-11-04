@@ -1,0 +1,17 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const page = await browser.newPage();
+const logs = [];
+page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
+const t0 = Date.now();
+await page.goto('http://localhost:4329/pocketledger-web/app/#/settings');
+await page.getByText('ms to compile').waitFor({ timeout: 30000 });
+console.log('settings engine ready after', Date.now() - t0, 'ms');
+console.log((await page.locator('dl.kv').first().innerText()).replace(/\n/g, ' | '));
+await page.goto('http://localhost:4329/pocketledger-web/app/#/reports');
+await page.waitForTimeout(2500);
+await page.goto('http://localhost:4329/pocketledger-web/app/#/settings');
+await page.getByText('Recent hledger runs').click();
+console.log((await page.locator('.timings').innerText()).split('\n').slice(0, 24).join('\n'));
+console.log(logs.filter((l) => !l.includes('wasi:')).slice(0, 10).join('\n'));
+await browser.close();

@@ -43,6 +43,7 @@ export class AppState {
   engineStatus = $state<'starting' | 'ready' | 'error'>('starting');
   engineError = $state('');
   engineMs = $state(0);
+  engineMode = $state<'cli' | 'reactor'>('cli');
   timings = $state.raw<{ args: string; ms: number }[]>([]);
 
   vaults = $state.raw<VaultRecord[]>([]);
@@ -82,13 +83,17 @@ export class AppState {
     this.engine = createEngineClient({
       wasmUrl: `${base}${__ENGINE__.file}`,
       sha256: __ENGINE__.sha256,
+      ...(__ENGINE__.reactor
+        ? { reactor: { wasmUrl: `${base}${__ENGINE__.reactor.file}`, jsffiUrl: `${base}${__ENGINE__.reactor.jsffi}`, sha256: __ENGINE__.reactor.sha256 } }
+        : {}),
       onTiming: (args, ms) => {
-        this.timings = [{ args: args.slice(2).join(' '), ms }, ...this.timings].slice(0, 40);
+        this.timings = [{ args: args.filter((a, i) => !(i < 2 && (a === '-f' || args[i - 1] === '-f')) && a !== '--no-conf').join(' '), ms }, ...this.timings].slice(0, 40);
       },
     });
     this.engine.ready.then(
-      ({ ms }) => {
+      ({ ms, mode }) => {
         this.engineMs = ms;
+        this.engineMode = mode;
         this.engineStatus = 'ready';
       },
       (e: Error) => {

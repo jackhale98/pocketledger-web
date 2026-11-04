@@ -22,13 +22,16 @@ if [ -f "$local_build" ]; then
     echo "Update wasm.lock or set ENGINE_ALLOW_UNPINNED=1 for local experiments." >&2
     exit 1
   fi
-  cp "$local_build" "$out"; echo "hledger.wasm: using local build ($got)"; exit 0
+  cp "$local_build" "$out"; echo "hledger.wasm: using local build ($got)"
+  cli_done=1
 fi
 
-if [ -f "$out" ] && [ "$(sum "$out")" = "$sha" ]; then
-  echo "hledger.wasm: already present and verified ($sha)"; exit 0
+if [ -z "${cli_done:-}" ] && [ -f "$out" ] && [ "$(sum "$out")" = "$sha" ]; then
+  echo "hledger.wasm: already present and verified ($sha)"
+  cli_done=1
 fi
 
+if [ -z "${cli_done:-}" ]; then
 tmp="$out.download"
 echo "hledger.wasm: downloading $url"
 n=0
@@ -45,3 +48,24 @@ actual_size=$(wc -c < "$tmp" | tr -d ' ')
 [ "$actual_size" = "$size" ] || echo "warning: size $actual_size differs from wasm.lock ($size)" >&2
 mv "$tmp" "$out"
 echo "hledger.wasm: verified $sha ($actual_size bytes)"
+fi
+
+# ---- Option B reactor (optional) -------------------------------------------
+fetch_verified() { # url expected_sha dest
+  [ -n "$1" ] || return 1
+  curl -fsSL --retry 3 -o "$3.download" "$1" || return 1
+  if [ "$(sum "$3.download")" != "$2" ]; then rm -f "$3.download"; echo "reactor: CHECKSUM MISMATCH for $1" >&2; exit 1; fi
+  mv "$3.download" "$3"
+}
+r_sha=$(get reactor_sha256); j_sha=$(get reactor_jsffi_sha256)
+r_out="$out_dir/hledger-reactor.wasm"; j_out="$out_dir/hledger-reactor.jsffi.mjs"
+for pair in "hledger-reactor.wasm:$r_sha:$r_out:$(get reactor_url)" "hledger-reactor.jsffi.mjs:$j_sha:$j_out:$(get reactor_jsffi_url)"; do
+  name=${pair%%:*}; rest=${pair#*:}; want=${rest%%:*}; rest=${rest#*:}; dest=${rest%%:*}; url=${rest#*:}
+  [ -n "$want" ] || continue
+  if [ -f "$dest" ] && [ "$(sum "$dest")" = "$want" ]; then continue; fi
+  if [ -f "$root/engine/artifacts/$name" ] && [ "$(sum "$root/engine/artifacts/$name")" = "$want" ]; then
+    cp "$root/engine/artifacts/$name" "$dest"; echo "$name: using verified local build"
+  elif fetch_verified "$url" "$want" "$dest"; then echo "$name: downloaded and verified"
+  else rm -f "$r_out" "$j_out"; echo "reactor engine not available; the app uses the CLI engine"; break
+  fi
+done

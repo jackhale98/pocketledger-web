@@ -1,21 +1,33 @@
-// Node helpers: load the pinned hledger.wasm once and build engines over it.
+// Node helpers: load the pinned engine(s) once and build engines over them.
+// ENGINE=reactor runs the suite on the Option B reactor (if its artifact is present).
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { WasiCliBackend } from '../../src/lib/engine/backend';
+import { pathToFileURL } from 'node:url';
+import { WasiCliBackend, type EngineBackend } from '../../src/lib/engine/backend';
+import { ReactorBackend, type JsffiFactory } from '../../src/lib/engine/reactor-backend';
 import { HledgerEngine } from '../../src/lib/engine/hledger-engine';
 import type { VaultSnapshot } from '../../src/lib/contracts/engine';
 
 export const WASM_PATH = resolve('public/wasm/hledger.wasm');
-export const hasWasm = existsSync(WASM_PATH);
+export const REACTOR_PATH = resolve('public/wasm/hledger-reactor.wasm');
+export const JSFFI_PATH = resolve('public/wasm/hledger-reactor.jsffi.mjs');
+export const hasReactor = existsSync(REACTOR_PATH) && existsSync(JSFFI_PATH);
+export const useReactor = process.env.ENGINE === 'reactor';
+export const hasWasm = useReactor ? hasReactor : existsSync(WASM_PATH);
 
-let modulePromise: Promise<WebAssembly.Module> | null = null;
-export function engineModule(): Promise<WebAssembly.Module> {
-  modulePromise ??= WebAssembly.compile(readFileSync(WASM_PATH));
-  return modulePromise;
-}
+const modules = new Map<string, Promise<WebAssembly.Module>>();
+const compile = (p: string) => {
+  if (!modules.has(p)) modules.set(p, WebAssembly.compile(readFileSync(p)));
+  return modules.get(p)!;
+};
+export const engineModule = () => compile(WASM_PATH);
 
-export async function makeBackend() {
-  return new WasiCliBackend(await engineModule());
+export async function makeBackend(kind: 'cli' | 'reactor' = useReactor ? 'reactor' : 'cli'): Promise<EngineBackend> {
+  if (kind === 'reactor') {
+    const glue = (await import(pathToFileURL(JSFFI_PATH).href)) as { default: JsffiFactory };
+    return ReactorBackend.create(await compile(REACTOR_PATH), glue.default);
+  }
+  return new WasiCliBackend(await compile(WASM_PATH));
 }
 
 export async function makeEngine() {

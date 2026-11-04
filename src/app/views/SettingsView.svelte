@@ -174,8 +174,8 @@
 <section class="card sec" aria-labelledby="e-h">
   <header><h2 id="e-h">Engine</h2></header>
   <dl class="kv">
-    <dt>hledger</dt><dd>{__ENGINE__.hledger} ({__ENGINE__.flavor}, WebAssembly)</dd>
-    <dt>Engine checksum</dt><dd class="mono small">{__ENGINE__.sha256.slice(0, 16)}…</dd>
+    <dt>hledger</dt><dd>{__ENGINE__.hledger}, WebAssembly · {app.engineMode === 'reactor' ? 'reactor (parses once)' : 'command per report'}</dd>
+    <dt>Engine checksum</dt><dd class="mono small">{(app.engineMode === 'reactor' && __ENGINE__.reactor ? __ENGINE__.reactor.sha256 : __ENGINE__.sha256).slice(0, 16)}…</dd>
     <dt>Start-up</dt><dd>{app.engineMs ? `${Math.round(app.engineMs)} ms to compile` : app.engineStatus}</dd>
     <dt>App</dt><dd>PocketLedger {__APP_VERSION__} · {syncState.status}</dd>
   </dl>

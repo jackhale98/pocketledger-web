@@ -4,11 +4,11 @@ import type { Engine, EngineError } from '../contracts/engine';
 export type EngineMethod = keyof Engine;
 
 export type Request =
-  | { type: 'init'; wasmUrl: string; sha256?: string; hledger?: string }
+  | { type: 'init'; wasmUrl: string; sha256?: string; reactor?: { wasmUrl: string; jsffiUrl: string; sha256: string } }
   | { type: 'call'; id: number; method: EngineMethod; args: unknown[] };
 
 export type Response =
-  | { type: 'ready'; ms: number }
+  | { type: 'ready'; ms: number; mode: 'cli' | 'reactor' }
   | { type: 'init-error'; message: string }
   | { type: 'result'; id: number; ok: true; value: unknown }
   | { type: 'result'; id: number; ok: false; errors: EngineError[] }

@@ -7,5 +7,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-declare const __ENGINE__: { file: string; sha256: string; hledger: string; flavor: string };
+declare const __ENGINE__: {
+  file: string;
+  sha256: string;
+  hledger: string;
+  flavor: string;
+  reactor: { file: string; jsffi: string; sha256: string } | null;
+};
 declare const __APP_VERSION__: string;

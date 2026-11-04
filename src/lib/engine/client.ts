@@ -12,13 +12,14 @@ export class EngineCallError extends Error {
 export interface EngineClientOptions {
   wasmUrl: string;
   sha256?: string;
+  reactor?: { wasmUrl: string; jsffiUrl: string; sha256: string };
   onTiming?: (args: string[], ms: number, code: number) => void;
   /** Factory for tests; defaults to the bundled module worker. */
   createWorker?: () => Worker;
 }
 
 export type EngineClient = Engine & {
-  ready: Promise<{ ms: number }>;
+  ready: Promise<{ ms: number; mode: 'cli' | 'reactor' }>;
   terminate(): void;
 };
 
@@ -27,15 +28,15 @@ export function createEngineClient(opts: EngineClientOptions): EngineClient {
     opts.createWorker?.() ?? new Worker(new URL('../../worker/engine.worker.ts', import.meta.url), { type: 'module', name: 'hledger' });
   let nextId = 1;
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: unknown) => void }>();
-  let readyResolve!: (v: { ms: number }) => void;
+  let readyResolve!: (v: { ms: number; mode: 'cli' | 'reactor' }) => void;
   let readyReject!: (e: unknown) => void;
-  const ready = new Promise<{ ms: number }>((res, rej) => {
+  const ready = new Promise<{ ms: number; mode: 'cli' | 'reactor' }>((res, rej) => {
     readyResolve = res;
     readyReject = rej;
   });
   worker.onmessage = (ev: MessageEvent<Response>) => {
     const m = ev.data;
-    if (m.type === 'ready') readyResolve({ ms: m.ms });
+    if (m.type === 'ready') readyResolve({ ms: m.ms, mode: m.mode });
     else if (m.type === 'init-error') readyReject(new Error(m.message));
     else if (m.type === 'timing') opts.onTiming?.(m.args, m.ms, m.code);
     else if (m.type === 'result') {
@@ -47,7 +48,7 @@ export function createEngineClient(opts: EngineClientOptions): EngineClient {
     }
   };
   worker.onerror = (e) => readyReject(new Error(e.message || 'Engine worker failed'));
-  const init: Request = { type: 'init', wasmUrl: opts.wasmUrl, ...(opts.sha256 ? { sha256: opts.sha256 } : {}) };
+  const init: Request = { type: 'init', wasmUrl: opts.wasmUrl, ...(opts.sha256 ? { sha256: opts.sha256 } : {}), ...(opts.reactor ? { reactor: opts.reactor } : {}) };
   worker.postMessage(init);
 
   const call = (method: EngineMethod, args: unknown[]) =>

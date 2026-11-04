@@ -14,3 +14,4 @@ engine/artifacts/
 engine/vendor/
 engine/.tools/
 .claude/worktrees/
+public/wasm/*.mjs
