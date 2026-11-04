@@ -18,7 +18,7 @@
   {#if shown.length === 0}
     <span class="muted">{zero}</span>
   {:else}
-    {#each shown as a, i (a.commodity)}
+    {#each shown as a, i (i)}
       {@const neg = isNegative(a.quantity) !== invert}
       <span class:pos={color && !neg} class:neg={color && neg}
         >{formatAmount(invert ? { ...a, quantity: a.quantity.startsWith('-') ? a.quantity.slice(1) : '-' + a.quantity } : a, {
