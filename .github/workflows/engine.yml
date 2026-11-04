@@ -1,12 +1,19 @@
 # Build the hledger reactor module (engine Option B) and publish it.
 #
-# Manual run: Actions -> engine -> Run workflow (artifacts only).
-# Tag push engine-vX.Y.Z: also creates a GitHub release with the module and
-# its JSFFI glue as assets. Update engine/wasm.lock from the printed sha256.
+# Manual run: Actions -> engine -> Run workflow. Leave "release" empty for a
+# build artifact only, or give a tag (e.g. engine-v1.52.4) to also publish a
+# GitHub release with the module and its JSFFI glue as assets.
+# Tag push engine-vX.Y.Z does the same. Then pin the printed sha256 values and
+# the asset URLs in engine/wasm.lock (reactor_*).
 name: engine
 
 on:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release tag to publish (e.g. engine-v1.52.4); empty = artifact only'
+        required: false
+        default: ''
   push:
     tags: ['engine-v*']
 
@@ -73,10 +80,25 @@ jobs:
             engine/artifacts/hledger-reactor.jsffi.mjs
           if-no-files-found: error
 
+      - name: Checksums
+        run: |
+          {
+            echo '### hledger reactor engine'
+            echo '```'
+            sha256sum engine/artifacts/hledger-reactor.wasm engine/artifacts/hledger-reactor.jsffi.mjs
+            wc -c engine/artifacts/hledger-reactor.wasm
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          sha256sum engine/artifacts/hledger-reactor.wasm engine/artifacts/hledger-reactor.jsffi.mjs
+
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/engine-v')
+        if: startsWith(github.ref, 'refs/tags/engine-v') || inputs.release != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ inputs.release || github.ref_name }}
+          body: hledger 1.52.4 compiled to wasm32-wasi as a reactor module (PocketLedger engine, Option B). Pin the sha256 values from the run summary in engine/wasm.lock.
           files: |
             engine/artifacts/hledger-reactor.wasm
             engine/artifacts/hledger-reactor.jsffi.mjs
