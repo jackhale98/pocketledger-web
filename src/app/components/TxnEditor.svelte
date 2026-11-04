@@ -329,7 +329,7 @@
           <span class="muted">Enter amounts; one may be left blank for hledger to infer.</span>
         {/if}
       </div>
-      <button type="submit" hidden></button>
+      <button type="submit" hidden aria-label="Save"></button>
     </form>
   {/if}
 

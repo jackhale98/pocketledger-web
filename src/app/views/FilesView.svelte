@@ -124,6 +124,7 @@
       {:else}<span class="pos"><Icon name="check" size={16} /> hledger reads this</span>{/if}
     </p>
   {:else}
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="card code" role="region" aria-label="Contents of {file}" tabindex="0">
       <table>
         <tbody>

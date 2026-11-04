@@ -47,7 +47,10 @@
       if (isEngineFile(path)) files[path] = await f.text();
     }
     input.value = '';
-    if (!Object.keys(files).length) return toasts.show('No journal, rules or CSV files found', { tone: 'error' });
+    if (!Object.keys(files).length) {
+      toasts.show('No journal, rules or CSV files found', { tone: 'error' });
+      return;
+    }
     try {
       const name = list[0]?.name.replace(/\.[^.]+$/, '') ?? 'Imported';
       await app.createVault({ name, provider: 'local' }, files);

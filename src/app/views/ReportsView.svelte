@@ -2,7 +2,6 @@
   import type { BalanceReport, PeriodicReport, StatementReport } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
   import { router, href } from '../state/router.svelte';
   import { columnLabel, presetRange } from '../lib/periods';
   import { chartCommodity, fmtIn, numberIn, otherCommodities } from '../lib/primary';

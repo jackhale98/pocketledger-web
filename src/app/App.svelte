@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { app } from './state/app.svelte';
   import { router, href } from './state/router.svelte';
-  import { toasts } from './state/toast.svelte';
   import { editor } from './state/editor.svelte';
   import Icon from './components/Icon.svelte';
   import Toasts from './components/Toasts.svelte';
