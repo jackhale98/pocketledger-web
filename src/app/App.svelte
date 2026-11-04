@@ -51,6 +51,16 @@
     void app.start().then(() => document.getElementById('pl-loader')?.remove());
     startPwa();
     startSync();
+    // Opened from the OS with .journal / .csv files (PWA file handler).
+    const lq = (window as unknown as { launchQueue?: { setConsumer(f: (p: { files: FileSystemFileHandle[] }) => void): void } }).launchQueue;
+    lq?.setConsumer(async ({ files }) => {
+      if (!files.length) return;
+      const texts: Record<string, string> = {};
+      for (const h of files) texts[h.name] = await (await h.getFile()).text();
+      const journals = Object.keys(texts).filter((n) => !n.endsWith('.csv'));
+      if (journals.length) await app.createVault({ name: journals[0]!.replace(/\.[^.]+$/, ''), provider: 'local' }, texts).catch(() => {});
+      else router.go('import');
+    });
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t.closest('input, textarea, select, [contenteditable], dialog')) return;

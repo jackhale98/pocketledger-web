@@ -10,10 +10,10 @@ conversion and validation comes from **hledger itself**, compiled to
 |---|---|
 | hledger | **1.52.4**, unmodified source |
 | Toolchain | GHC 9.12 via [ghc-wasm-meta](https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta) |
-| Flavour | `hledger-cli`: the real `hledger` executable as a WASI command module (Option A) |
+| Flavours | **Reactor** (Option B, preferred): hledger's own CLI dispatch compiled as a reactor module that keeps the parsed journal in memory. **CLI** (Option A, fallback): the `hledger` executable as a WASI command module |
 | Pin | `engine/wasm.lock` (URL, sha256, size). `engine/scripts/fetch.sh` refuses a mismatching file. |
 | Served as | `wasm/hledger-<sha256[0..16]>.wasm` (content-addressed, so updates are atomic) |
-| Size | 12.58 MiB raw · 4.20 MiB gzip · 2.83 MiB brotli |
+| Size | reactor 12.65 MiB raw · 2.84 MiB brotli; CLI 12.58 MiB raw · 4.20 MiB gzip · 2.83 MiB brotli |
 
 The artifact currently pinned is the one published by
 [lc-at/hledger-anywhere](https://github.com/lc-at/hledger-anywhere) (release
@@ -34,6 +34,29 @@ Prior art read and reused:
   for Option B (`-optl-mexec-model=reactor`, `--export=hs_init`, JSFFI glue
   from `post-link.mjs`), and its size attribution (regex-tdfa and emojis are
   the largest avoidable dependencies).
+
+## Option B: the reactor
+
+`engine/hledger-wasm/` builds hledger 1.52.4 (no source changes) as a
+`wasm32-wasi` reactor module exporting three JSFFI functions:
+
+- `hledgerRun(argsJson) -> {"code","stdout","stderr"}` runs hledger's own CLI
+  code (`src/CliMain.hs`, a marked copy of `Hledger.Cli.main`) against an
+  in-memory parse cache keyed by input files + input options;
+- `hledgerInvalidate()` drops the cache (the app calls it on every mount);
+- `hledgerVersion()`.
+
+Stub packages for `req`, `http-client` and `terminal-size` were written for
+this repository (so no network code is linked). `engine/scripts/build.sh`
+reproduces the build (pinned ghc-wasm-meta commit, hledger commit, and a cabal
+freeze file; about 25 minutes cold); `engine/RESULTS.md` has the full
+measurements and the parity report (46/46 cases byte-identical to native,
+stdout, stderr and exit code).
+
+The app prefers the reactor when `public/wasm/hledger-reactor.wasm` and its
+JSFFI glue match `reactor_sha256` / `reactor_jsffi_sha256` in
+`engine/wasm.lock`; the worker falls back to the CLI module if the reactor
+fails to start. Every golden passes on both (`ENGINE=reactor npm test`).
 
 ## How it is invoked
 
@@ -64,7 +87,17 @@ UI thread ──postMessage──▶ engine.worker.ts ──▶ HledgerEngine �
 The same code runs under Node in the test suite (`tests/helpers/engine.ts`),
 which is how the goldens exercise the exact browser code path.
 
-## Measurements (Option A)
+## Measurements
+
+Reactor (Option B), same fixture, Node 22: first `bs -O json` 918 ms
+(compile 47 + instantiate 32 + parse/report 820); **warm `bs -O json` 380–410
+ms**; warm `is -M -O json` 210–250 ms; peak memory 23–41 MiB. In Chromium on
+the demo vault, dashboard reports take 8–40 ms; only the first `print -O json`
+(parse + transaction list) takes ~0.5 s. The remaining cost on large journals
+is hledger's pretty-printed JSON encoder (≈ 600 ms of `print -O json` on the
+791-transaction file); the report computation itself is ~20 ms.
+
+### Option A (CLI)
 
 On `tests/fixtures/example.hledger` (791 transactions, 9 commodities, 624
 prices), Node 22 / V8 on x86-64 (`npm run bench:engine`):

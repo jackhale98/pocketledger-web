@@ -10,9 +10,9 @@ export interface PostingDraft {
   account: string;
   /** Number as typed, e.g. "-12.50" or "1,234.50" (decimal mark per style). Empty/undefined = let hledger infer. */
   amount?: string;
-  /** Commodity symbol, e.g. "$", "EUR". Empty = no commodity / use style default. */
+  /** Commodity symbol, e.g. "$", "EUR". `undefined` = the style's default commodity; `''` = explicitly no commodity. */
   commodity?: string;
-  /** Cost expression as written after `@` or `@@`, e.g. "@ $1.10" or "@@ 110 EUR". */
+  /** Lot and cost text as written after the amount, e.g. "@ $1.10", "@@ 110 EUR", "{$50} [2024-01-01] @ $55". */
   cost?: string;
   /** Balance assertion as written, e.g. "= $500" or "== 0". */
   assertion?: string;
@@ -34,7 +34,9 @@ export interface TxnDraft {
 }
 
 export type Patch =
+  /** `text` is appended verbatim (EOLs normalised to the file's), including its own separating blank line. */
   | { op: 'append'; file: string; text: string }
+  /** `text` has no trailing EOL; `apply` adds the file's EOL. */
   | { op: 'insert'; file: string; beforeLine: number; text: string }
   /** startLine/endLine are 1-based and inclusive; `expected` is the exact current text of those lines (joined with the file's EOL, no trailing EOL). */
   | { op: 'replace'; file: string; startLine: number; endLine: number; expected: string; text: string }
@@ -58,6 +60,8 @@ export interface JournalStyle {
   finalNewline: boolean;
   /** Default commodity from a `D` directive or the most common commodity. */
   defaultCommodity: string | null;
+  /** Per-commodity display styles inferred from the file (side, spacing, marks, usual precision). */
+  commodities?: Record<string, { side: 'L' | 'R'; spaced: boolean; decimalMark: '.' | ','; groupMark: string | null; precision: number | null }>;
 }
 
 /** Thrown by `apply` when a patch's `expected` text no longer matches: reload and re-plan. */
@@ -76,6 +80,7 @@ export interface Writer {
   formatTxn(draft: TxnDraft, style: JournalStyle): string;
   /** Add a transaction: appended to `targetFile` (default: snapshot.rootFile), or in date order if `dateOrder`. */
   planAdd(snapshot: VaultSnapshot, draft: TxnDraft, opts?: { targetFile?: string; dateOrder?: boolean; txns?: Txn[] }): Patch[];
+  /** Returns `[]` when the draft equals the transaction (no-op edits never touch the file). */
   planEdit(snapshot: VaultSnapshot, txn: Txn, draft: TxnDraft): Patch[];
   /** Replace a transaction's text verbatim (source view editing). */
   planReplaceText(snapshot: VaultSnapshot, txn: Txn, text: string): Patch[];

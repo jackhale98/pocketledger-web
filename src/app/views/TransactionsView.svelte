@@ -22,6 +22,7 @@
   let statusFilter = $state<'' | '*' | '!' | 'u'>((saved.status as '' | '*' | '!' | 'u') ?? '');
   let newest = $state(saved.newest ?? true);
   let limit = $state(150);
+  let forecast = $state(false);
   let queryResult = $state.raw<Txn[] | null>(null);
   let queryError = $state('');
 
@@ -40,7 +41,8 @@
   $effect(() => {
     const q = search;
     const rev = app.revision;
-    if (!isQuery || !rev) {
+    const fc = forecast;
+    if ((!isQuery && !fc) || !rev) {
       queryResult = null;
       queryError = '';
       return;
@@ -48,7 +50,7 @@
     clearTimeout(qtimer);
     qtimer = setTimeout(async () => {
       try {
-        queryResult = await app.engine!.transactions({ query: splitQuery(q) });
+        queryResult = await app.engine!.transactions({ ...(isQuery ? { query: splitQuery(q) } : {}), ...(fc ? { forecast: true } : {}) });
         queryError = '';
       } catch (e) {
         queryResult = [];
@@ -140,6 +142,7 @@
     {#each [['', 'Any status'], ['*', 'Cleared'], ['!', 'Pending'], ['u', 'Unmarked']] as [v, l] (v)}
       <button class="chip" type="button" aria-pressed={statusFilter === v} onclick={() => (statusFilter = v as typeof statusFilter)}>{l}</button>
     {/each}
+    <button class="chip" type="button" aria-pressed={forecast} onclick={() => (forecast = !forecast)} title="Include future transactions from periodic (~) rules"><Icon name="repeat" size={14} />Forecast</button>
     <button class="chip" type="button" onclick={() => (newest = !newest)} aria-label="Sort: {newest ? 'newest first' : 'oldest first'}">
       <Icon name={newest ? 'arrow-down' : 'arrow-up'} size={14} />{newest ? 'Newest' : 'Oldest'}
     </button>

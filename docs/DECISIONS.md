@@ -3,14 +3,21 @@
 ADR-style log. Each entry: context, decision, consequences. Deviations from
 BUILD_PLAN.md are marked **(deviation)**.
 
-## D-001 Engine: hledger CLI as a WASI command (Option A) for v1
+## D-001 Engine: reactor (Option B) preferred, CLI (Option A) as fallback
 
 **Context.** §5.3 offers Option A (the `hledger` executable as a WASI command,
 re-instantiated per call) or Option B (a reactor module with hledger-lib
 bindings that keeps the parsed journal in memory). Measurements on the
 791-transaction fixture are in [ENGINE.md](ENGINE.md).
 
-**Decision.** Ship Option A now. It is exact (85/85 goldens byte-identical to
+**Decision (revised).** The app prefers Option B, built in this repository
+(`engine/hledger-wasm`), and keeps Option A as an automatic fallback. Option B
+meets every hard limit (warm balance sheet 380–410 ms on 791 transactions) but
+not the 150 ms target, because hledger's JSON pretty-printer dominates; using
+text/CSV output or upstreaming compact JSON are the remaining levers, and
+both are deferred so hledger stays unmodified.
+
+**Original decision.** Ship Option A first. It is exact (85/85 goldens byte-identical to
 native hledger 1.52.4), small enough (2.83 MiB brotli, 4.2 MiB gzip),
 cold-starts within target, and every hledger command is available, which the
 console, checks and CSV import rely on. The engine sits behind
@@ -126,3 +133,30 @@ balance assertion is appended on the statement date.
 ## D-014 Goldens stored gzip-compressed
 
 `tests/golden/expected/*.out.gz` (450 KB instead of 6.4 MB).
+
+## D-015 Hosting the reactor artifact **(deviation)**
+
+The reactor `.wasm` and its JSFFI glue are pinned by sha256 in
+`engine/wasm.lock` but `reactor_url` is empty: no release asset exists yet.
+`fetch.sh` uses a verified local build (`engine/artifacts/`) or the URL once
+`engine.yml` has published one, and otherwise leaves the reactor out, in which
+case the build ships the CLI engine only. The artifact is deliberately not
+committed to git (13 MB per version).
+
+## D-016 Writer contract clarifications
+
+From the writer port: `PostingDraft.commodity` `undefined` = default
+commodity, `''` = none; lots live in `cost` with the price; `append` text is
+verbatim, `insert` text has no trailing EOL; `planEdit` may return `[]`;
+`JournalStyle.commodities` (optional) carries per-commodity styles. New
+negative left-side amounts are written `$-12.50`, as `hledger print` does.
+
+## D-017 Not yet done
+
+- Cached reports from the previous session while the engine starts (§10):
+  the reactor starts in ~0.5 s, so this was deprioritised.
+- Lighthouse scores were not measured in this environment; the bundle budget
+  (96 KB gzip of 250 KB) and axe checks run in CI.
+- WebKit e2e runs in CI only (no WebKit in the dev container).
+- OneDrive / WebDAV (§8.2 later), GitHub OAuth sign-in UI (the worker and
+  `src/lib/auth` support it; the app currently uses a personal access token).
