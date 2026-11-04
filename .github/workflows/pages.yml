@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - id: pages
+        uses: actions/configure-pages@v5
+      - run: npm ci
+      - run: sh engine/scripts/fetch.sh
+      - run: npm run build
+        env:
+          # Project sites are served from /<repo>/; a custom domain serves from /.
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          SITE_BASE: ${{ steps.pages.outputs.base_path || '/' }}
+          PUBLIC_GIT_PROXY: ${{ vars.PUBLIC_GIT_PROXY }}
+          PUBLIC_DROPBOX_APP_KEY: ${{ vars.PUBLIC_DROPBOX_APP_KEY }}
+          PUBLIC_GITHUB_CLIENT_ID: ${{ vars.PUBLIC_GITHUB_CLIENT_ID }}
+          PUBLIC_CSP_CONNECT_EXTRA: ${{ vars.PUBLIC_CSP_CONNECT_EXTRA }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
