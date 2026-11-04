@@ -1,0 +1,21 @@
+{
+  "name": "PocketLedger",
+  "short_name": "PocketLedger",
+  "description": "Your hledger journals, anywhere: real hledger running privately in your browser.",
+  "start_url": "./app/",
+  "scope": "./",
+  "id": "./app/",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#0f766e",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "file_handlers": [
+    { "action": "./app/", "accept": { "text/plain": [".journal", ".hledger", ".ledger"], "text/csv": [".csv"] } }
+  ]
+}

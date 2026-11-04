@@ -158,8 +158,9 @@ export interface PeriodicReport {
 export interface StatementSection {
   /** e.g. "Assets", "Liabilities", "Revenues", "Expenses". */
   title: string;
-  /** Section balances are normally positive in hledger's display (sign flipped for credit sections). */
-  normallyPositive: boolean;
+  /** hledger's flag: this section is added to (true) or subtracted from (false) the net total.
+   *  bs: Assets true, Liabilities false. is: Revenues true, Expenses false. Amounts are shown in normal sign. */
+  increasesTotal: boolean;
   report: PeriodicReport;
 }
 

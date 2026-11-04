@@ -1,0 +1,32 @@
+{
+  "fixtures": {
+    "basic": "basic.journal",
+    "multicurrency": "multicurrency.journal",
+    "budget": "sample-with-budget.journal",
+    "comma": "comma_decimal.journal",
+    "assertions": "assertions.journal",
+    "edge": "edge_cases.journal",
+    "example": "example.hledger"
+  },
+  "commands": {
+    "print": ["print", "-O", "json"],
+    "bal": ["balance", "--flat", "-O", "json"],
+    "baltree": ["balance", "--tree", "--no-elide", "-O", "json"],
+    "balM": ["balance", "--flat", "-M", "-O", "json"],
+    "bs": ["bs", "--flat", "-O", "json"],
+    "is": ["is", "--flat", "-M", "-O", "json"],
+    "cf": ["cf", "--flat", "-O", "json"],
+    "budget": ["balance", "--budget", "--flat", "-M", "-O", "json"],
+    "reg": ["register", "-O", "json"],
+    "accounts": ["accounts", "--types"],
+    "commodities": ["commodities"],
+    "payees": ["payees"]
+  },
+  "extra": [
+    { "fixture": "multicurrency", "name": "balX", "args": ["balance", "--flat", "-X", "USD", "-O", "json"] },
+    { "fixture": "example", "name": "balX", "args": ["balance", "--flat", "-X", "USD", "-O", "json"] },
+    { "fixture": "example", "name": "bsV", "args": ["bs", "--flat", "-V", "-O", "json"] },
+    { "fixture": "budget", "name": "forecast", "args": ["print", "--forecast=2026-01..2026-04", "-O", "json"] }
+  ],
+  "skipFor": { "example": ["reg", "balM", "budget"] }
+}

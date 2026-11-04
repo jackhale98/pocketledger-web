@@ -1,0 +1,27 @@
+; Account declarations with hledger account types.
+commodity $1,000.00
+commodity 1.000,00 EUR
+commodity 1.000 VTI
+
+account assets                    ; type: A
+account assets:checking           ; type: C
+account assets:savings            ; type: C
+account assets:cash               ; type: C
+account assets:brokerage          ; type: A
+account liabilities               ; type: L
+account liabilities:credit card   ; type: L
+account equity                    ; type: E
+account income                    ; type: R
+account income:salary
+account income:interest
+account expenses                  ; type: X
+account expenses:rent
+account expenses:groceries
+account expenses:dining
+account expenses:coffee
+account expenses:transport
+account expenses:utilities
+account expenses:subscriptions
+account expenses:travel
+account expenses:health
+account expenses:gifts

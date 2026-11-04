@@ -1,0 +1,9 @@
+; PocketLedger demo vault.
+; Everything here is fictional. Edit freely: changes stay on this device.
+;
+; The root journal pulls in declarations, prices, budgets and one file per year.
+
+include accounts.journal
+include prices.journal
+include budget.journal
+include 2026/*.journal

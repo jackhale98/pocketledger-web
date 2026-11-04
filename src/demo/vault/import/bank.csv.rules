@@ -1,0 +1,16 @@
+# CSV rules for the demo bank export. See hledger's CSV manual.
+skip 1
+fields date, description, amount, balance
+currency $
+account1 assets:checking
+
+if COFFEE
+  account2 expenses:coffee
+if GREEN MARKET
+  account2 expenses:groceries
+if PAYROLL
+  account2 income:salary
+if METRO
+  account2 expenses:transport
+if TAQUERIA
+  account2 expenses:dining

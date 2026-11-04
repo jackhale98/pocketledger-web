@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import App from '../app/App.svelte';
+---
+
+<Base title="PocketLedger" description="Your hledger journals: real hledger, running privately in your browser.">
+  <div id="pl-loader" class="pl-loader" aria-hidden="true">
+    <svg viewBox="0 0 32 32" width="56" height="56"><rect width="32" height="32" rx="8" fill="var(--accent)"></rect><path d="M9 10h14M9 16h14M9 22h8" stroke="var(--accent-text)" stroke-width="2.6" stroke-linecap="round"></path></svg>
+    <p>Loading PocketLedger…</p>
+  </div>
+  <App client:only="svelte" />
+  <noscript><p style="padding:24px">PocketLedger runs hledger inside your browser and needs JavaScript.</p></noscript>
+</Base>
+
+<style is:global>
+  .pl-loader { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 14px; background: var(--bg); color: var(--text-3); font-size: 0.9rem; }
+  .pl-loader svg { animation: pl-breathe 1.4s ease-in-out infinite alternate; }
+  @keyframes pl-breathe { to { transform: scale(0.92); opacity: 0.7; } }
+</style>

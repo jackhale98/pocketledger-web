@@ -1,0 +1,681 @@
+; 2026 transactions
+
+2026-05-01 * Opening balances
+    assets:checking                        $4,200.00
+    assets:savings                        $12,500.00
+    assets:cash                               $80.00
+    assets:brokerage                  20 VTI @ $262.10
+    liabilities:credit card                 $-640.25
+    equity:opening balances
+
+2026-05-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-05-01 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-05-02 * FreshCo | Groceries
+    expenses:groceries                       $132.72
+    liabilities:credit card
+
+2026-05-02 * Bean There | Coffee
+    expenses:coffee                            $5.80
+    assets:cash
+
+2026-05-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-05-04 * Bean There | Coffee
+    expenses:coffee                            $4.51
+    assets:cash
+
+2026-05-05 * City Power | Electricity
+    expenses:utilities                        $99.12
+    assets:checking
+
+2026-05-08 * Bean There | Coffee
+    expenses:coffee                            $5.01
+    assets:cash
+
+2026-05-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-05-09 * FreshCo | Groceries
+    expenses:groceries                       $116.48
+    liabilities:credit card
+
+2026-05-10 * Taqueria Sol | Dinner
+    expenses:dining                           $22.60
+    liabilities:credit card
+
+2026-05-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $262.10
+    assets:checking
+
+2026-05-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-05-13 * Taqueria Sol | Dinner
+    expenses:dining                           $55.03
+    liabilities:credit card
+
+2026-05-14 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-05-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-05-16 * Green Market | Groceries
+    expenses:groceries                        $83.43
+    liabilities:credit card
+
+2026-05-18 * Bean There | Coffee
+    expenses:coffee                            $3.67
+    assets:cash
+
+2026-05-20 * Credit card payment
+    liabilities:credit card                  $655.95
+    assets:checking
+
+2026-05-21 * Bean There | Coffee
+    expenses:coffee                            $4.31
+    assets:cash
+
+2026-05-23 * Green Market | Groceries
+    expenses:groceries                       $100.12
+    liabilities:credit card
+
+2026-05-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-05-25 * Sushi Bar | Dinner
+    expenses:dining                           $54.95
+    liabilities:credit card
+
+2026-05-27 * Thai Basil | Dinner
+    expenses:dining                           $47.54
+    liabilities:credit card
+
+2026-05-27 * Bean There | Coffee
+    expenses:coffee                            $5.92
+    assets:cash
+
+2026-05-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-05-28 * Savings interest
+    assets:savings                            $25.32
+    income:interest
+
+2026-06-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-06-01 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-06-02 * FreshCo | Groceries
+    expenses:groceries                       $139.75
+    liabilities:credit card
+
+2026-06-02 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-06-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-06-05 * City Power | Electricity
+    expenses:utilities                        $98.86
+    assets:checking
+
+2026-06-06 * Bean There | Coffee
+    expenses:coffee                            $4.77
+    assets:cash
+
+2026-06-07 * Bean There | Coffee
+    expenses:coffee                            $5.94
+    assets:cash
+
+2026-06-08 * Bean There | Coffee
+    expenses:coffee                            $3.74
+    assets:cash
+
+2026-06-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-06-09 * Farmers Market | Groceries
+    expenses:groceries                        $96.10
+    liabilities:credit card
+
+2026-06-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $268.40
+    assets:checking
+
+2026-06-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-06-14 * Noodle House | Dinner
+    expenses:dining                           $24.78
+    liabilities:credit card
+
+2026-06-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-06-16 * Farmers Market | Groceries
+    expenses:groceries                       $109.95
+    liabilities:credit card
+
+2026-06-17 * Thai Basil | Dinner
+    expenses:dining                           $43.73
+    liabilities:credit card
+
+2026-06-17 * Bean There | Coffee
+    expenses:coffee                            $3.77
+    assets:cash
+
+2026-06-20 * Credit card payment
+    liabilities:credit card                  $666.54
+    assets:checking
+
+2026-06-22 * Bean There | Coffee
+    expenses:coffee                            $5.32
+    assets:cash
+
+2026-06-23 * Farmers Market | Groceries
+    expenses:groceries                        $89.76
+    liabilities:credit card
+
+2026-06-23 * Taqueria Sol | Dinner
+    expenses:dining                           $18.77
+    liabilities:credit card
+
+2026-06-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-06-25 * Bean There | Coffee
+    expenses:coffee                            $6.43
+    assets:cash
+
+2026-06-26 * Taqueria Sol | Dinner
+    expenses:dining                           $32.32
+    liabilities:credit card
+
+2026-06-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-06-28 * Savings interest
+    assets:savings                            $23.21
+    income:interest
+
+2026-07-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-07-02 * Farmers Market | Groceries
+    expenses:groceries                       $109.67
+    liabilities:credit card
+
+2026-07-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-07-03 * Bean There | Coffee
+    expenses:coffee                            $5.99
+    assets:cash
+
+2026-07-05 * City Power | Electricity
+    expenses:utilities                        $77.35
+    assets:checking
+
+2026-07-07 * Noodle House | Dinner
+    expenses:dining                           $32.49
+    liabilities:credit card
+
+2026-07-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-07-09 * Corner Grocery | Groceries
+    expenses:groceries                       $104.85
+    liabilities:credit card
+
+2026-07-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $274.95
+    assets:checking
+
+2026-07-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-07-12 * Sushi Bar | Dinner
+    expenses:dining                           $25.52
+    liabilities:credit card
+
+2026-07-13 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-07-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-07-15 * Bean There | Coffee
+    expenses:coffee                            $4.37
+    assets:cash
+
+2026-07-16 * FreshCo | Groceries
+    expenses:groceries                       $109.10
+    liabilities:credit card
+
+2026-07-17 * Pizza Corner | Dinner
+    expenses:dining                           $36.37
+    liabilities:credit card
+
+2026-07-17 * Bean There | Coffee
+    expenses:coffee                            $3.80
+    assets:cash
+
+2026-07-17 * Bean There | Coffee
+    expenses:coffee                            $3.87
+    assets:cash
+
+2026-07-18 * Air Europa | Flights  ; trip:lisbon
+    expenses:travel                          $684.40
+    liabilities:credit card
+
+2026-07-19 * Pizza Corner | Dinner
+    expenses:dining                           $51.61
+    liabilities:credit card
+
+2026-07-19 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-07-20 * Credit card payment
+    liabilities:credit card                  $606.70
+    assets:checking
+
+2026-07-22 * Hotel Lisboa  ; trip:lisbon
+    expenses:travel                   410,00 EUR @@ $451.00
+    liabilities:credit card
+
+2026-07-23 * Green Market | Groceries
+    expenses:groceries                       $133.00
+    liabilities:credit card
+
+2026-07-23 * Pastelaria Belém  ; trip:lisbon
+    expenses:dining                        18,40 EUR
+    assets:cash                           -18,40 EUR
+
+2026-07-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-07-26 * Bean There | Coffee
+    expenses:coffee                            $5.25
+    assets:cash
+
+2026-07-27 * Bean There | Coffee
+    expenses:coffee                            $5.97
+    assets:cash
+
+2026-07-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-07-28 * Savings interest
+    assets:savings                            $22.34
+    income:interest
+
+2026-08-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-08-02 * Corner Grocery | Groceries
+    expenses:groceries                        $88.96
+    liabilities:credit card
+
+2026-08-02 * Noodle House | Dinner
+    expenses:dining                           $41.69
+    liabilities:credit card
+
+2026-08-02 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-08-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-08-05 * City Power | Electricity
+    expenses:utilities                       $109.02
+    assets:checking
+
+2026-08-06 * Bean There | Coffee
+    expenses:coffee                            $3.78
+    assets:cash
+
+2026-08-07 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-08-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-08-09 * Corner Grocery | Groceries
+    expenses:groceries                        $84.74
+    liabilities:credit card
+
+2026-08-09 * Bean There | Coffee
+    expenses:coffee                            $6.47
+    assets:cash
+
+2026-08-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $271.30
+    assets:checking
+
+2026-08-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-08-13 * Sushi Bar | Dinner
+    expenses:dining                           $19.30
+    liabilities:credit card
+
+2026-08-14 * Bean There | Coffee
+    expenses:coffee                            $4.20
+    assets:cash
+
+2026-08-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-08-16 * Farmers Market | Groceries
+    expenses:groceries                       $103.98
+    liabilities:credit card
+
+2026-08-17 * Pizza Corner | Dinner
+    expenses:dining                           $38.27
+    liabilities:credit card
+
+2026-08-18 * Bean There | Coffee
+    expenses:coffee                            $4.19
+    assets:cash
+
+2026-08-19 * Bean There | Coffee
+    expenses:coffee                            $4.36
+    assets:cash
+
+2026-08-20 * Credit card payment
+    liabilities:credit card                  $693.06
+    assets:checking
+
+2026-08-20 * Bean There | Coffee
+    expenses:coffee                            $6.16
+    assets:cash
+
+2026-08-23 * FreshCo | Groceries
+    expenses:groceries                       $115.56
+    liabilities:credit card
+
+2026-08-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-08-26 * Sushi Bar | Dinner
+    expenses:dining                           $44.83
+    liabilities:credit card
+
+2026-08-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-08-28 * Savings interest
+    assets:savings                            $24.94
+    income:interest
+
+2026-09-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-09-02 * Green Market | Groceries
+    expenses:groceries                       $133.47
+    liabilities:credit card
+
+2026-09-02 * Noodle House | Dinner
+    expenses:dining                           $33.05
+    liabilities:credit card
+
+2026-09-02 * Sushi Bar | Dinner
+    expenses:dining                           $18.41
+    liabilities:credit card
+
+2026-09-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-09-05 * City Power | Electricity
+    expenses:utilities                        $97.31
+    assets:checking
+
+2026-09-06 * Bean There | Coffee
+    expenses:coffee                            $5.84
+    assets:cash
+
+2026-09-07 * Thai Basil | Dinner
+    expenses:dining                           $29.52
+    liabilities:credit card
+
+2026-09-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-09-09 * Farmers Market | Groceries
+    expenses:groceries                        $91.91
+    liabilities:credit card
+
+2026-09-09 * Bean There | Coffee
+    expenses:coffee                            $4.64
+    assets:cash
+
+2026-09-09 * Bean There | Coffee
+    expenses:coffee                            $5.31
+    assets:cash
+
+2026-09-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $280.15
+    assets:checking
+
+2026-09-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-09-14 * Pharmacy
+    expenses:health                           $32.15
+    liabilities:credit card
+
+2026-09-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-09-15 * Bean There | Coffee
+    expenses:coffee                            $4.78
+    assets:cash
+
+2026-09-16 * Green Market | Groceries
+    expenses:groceries                        $97.02
+    liabilities:credit card
+
+2026-09-19 * Bean There | Coffee
+    expenses:coffee                            $5.66
+    assets:cash
+
+2026-09-19 * Bean There | Coffee
+    expenses:coffee                            $4.73
+    assets:cash
+
+2026-09-20 * Credit card payment
+    liabilities:credit card                  $730.25
+    assets:checking
+
+2026-09-22 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-09-23 * Green Market | Groceries
+    expenses:groceries                       $111.59
+    liabilities:credit card
+
+2026-09-24 * Noodle House | Dinner
+    expenses:dining                           $48.89
+    liabilities:credit card
+
+2026-09-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-09-25 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-09-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-09-28 * Savings interest
+    assets:savings                            $23.13
+    income:interest
+
+2026-10-01 * Landlord | Rent
+    expenses:rent                          $1,650.00
+    assets:checking
+
+2026-10-01 * Sushi Bar | Dinner
+    expenses:dining                           $42.87
+    liabilities:credit card
+
+2026-10-02 * Farmers Market | Groceries
+    expenses:groceries                       $119.00
+    liabilities:credit card
+
+2026-10-03 * StreamFlix | Subscription
+    expenses:subscriptions                    $15.99
+    liabilities:credit card
+
+2026-10-03 * Bean There | Coffee
+    expenses:coffee                            $3.99
+    assets:cash
+
+2026-10-04 * Metro Card | Transit pass
+    expenses:transport                        $95.00
+    assets:checking
+
+2026-10-05 * City Power | Electricity
+    expenses:utilities                        $89.61
+    assets:checking
+
+2026-10-05 * Bean There | Coffee
+    expenses:coffee                            $3.55
+    assets:cash
+
+2026-10-05 * Bean There | Coffee
+    expenses:coffee                            $3.51
+    assets:cash
+
+2026-10-06 * Bean There | Coffee
+    expenses:coffee                            $5.62
+    assets:cash
+
+2026-10-09 * Fiber Net | Internet
+    expenses:utilities                        $60.00
+    assets:checking
+
+2026-10-09 * FreshCo | Groceries
+    expenses:groceries                       $142.80
+    liabilities:credit card
+
+2026-10-09 * Bean There | Coffee
+    expenses:coffee                            $3.99
+    assets:cash
+
+2026-10-10 * Brokerage | Buy VTI
+    assets:brokerage                  2 VTI @ $286.60
+    assets:checking
+
+2026-10-11 * Pizza Corner | Dinner
+    expenses:dining                           $19.61
+    liabilities:credit card
+
+2026-10-12 * Music Box | Subscription
+    expenses:subscriptions                    $10.99
+    liabilities:credit card
+
+2026-10-13 * Thai Basil | Dinner
+    expenses:dining                           $45.01
+    liabilities:credit card
+
+2026-10-15 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-10-16 * Farmers Market | Groceries
+    expenses:groceries                       $138.42
+    liabilities:credit card
+
+2026-10-19 * Bean There | Coffee
+    expenses:coffee                            $3.89
+    assets:cash
+
+2026-10-20 * Credit card payment
+    liabilities:credit card                  $516.28
+    assets:checking
+
+2026-10-21 ! Bookshop | Birthday gift  ; pending until it clears
+    expenses:gifts                            $42.00
+    liabilities:credit card
+
+2026-10-23 * Farmers Market | Groceries
+    expenses:groceries                        $83.49
+    liabilities:credit card
+
+2026-10-23 * Thai Basil | Dinner
+    expenses:dining                           $47.23
+    liabilities:credit card
+
+2026-10-23 * ATM withdrawal
+    assets:cash                               $60.00
+    assets:checking
+
+2026-10-24 Green Market | Groceries
+    expenses:groceries                        $96.30
+    liabilities:credit card
+
+2026-10-25 * Transfer to savings
+    assets:savings                           $400.00
+    assets:checking
+
+2026-10-28 * Acme Corp | Salary  ; payroll:
+    assets:checking                        $3,200.00
+    income:salary
+
+2026-10-28 * Savings interest
+    assets:savings                            $18.58
+    income:interest

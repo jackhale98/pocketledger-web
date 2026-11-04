@@ -1,0 +1,10 @@
+; Market prices. PocketLedger never downloads prices; they come from here.
+P 2026-05-01 EUR $1.08
+P 2026-07-01 EUR $1.10
+P 2026-09-01 EUR $1.12
+P 2026-05-01 VTI $262.10
+P 2026-06-01 VTI $268.40
+P 2026-07-01 VTI $274.95
+P 2026-08-01 VTI $271.30
+P 2026-09-01 VTI $280.15
+P 2026-10-01 VTI $286.60

@@ -1,0 +1,109 @@
+---
+import Base from '../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const features = [
+  { t: 'Real hledger', d: 'Not a look-alike: hledger 1.52 itself, compiled to WebAssembly. Every balance, report, budget and CSV rule behaves exactly as on your computer.' },
+  { t: 'Your files, untouched', d: 'Edits are minimal text patches. Comments, alignment, includes and line endings survive, and every change is checked by hledger before it is saved.' },
+  { t: 'Private by design', d: 'No server, no account, no analytics. Journals stay in your browser and the storage you connect: Dropbox, GitHub, or a folder on disk.' },
+  { t: 'Works offline', d: 'Install it to your home screen. It opens without a connection and syncs when you are back online.' },
+  { t: 'Made for phones', d: 'Quick entry with autocomplete, inferred amounts and a live balance check. A full two-pane layout on desktop.' },
+  { t: 'Reports that matter', d: 'Net worth, income vs spending, balance sheet, income statement, cash flow, budgets, reconciliation, multi-currency valuation.' },
+];
+---
+
+<Base title="PocketLedger — hledger in your pocket">
+  <div class="land">
+    <header class="nav">
+      <a class="brand" href={base}>
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"></rect><path d="M9 10h14M9 16h14M9 22h8" stroke="var(--accent-text)" stroke-width="2.6" stroke-linecap="round"></path></svg>
+        PocketLedger
+      </a>
+      <a class="btn primary" href={`${base}app/`}>Open the app</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Plain-text accounting, anywhere</p>
+        <h1>Your hledger journal,<br />in your pocket.</h1>
+        <p class="lede">PocketLedger runs the real hledger inside your browser. Add transactions on your phone, see reports on your laptop, and keep your journal as the plain text file you own.</p>
+        <div class="cta">
+          <a class="btn primary big" href={`${base}app/`}>Try it with demo data</a>
+          <a class="btn big" href="https://hledger.org">What is hledger?</a>
+        </div>
+        <p class="fine">Free and open source · GPL-3.0 · No sign-up</p>
+      </section>
+
+      <section class="mock" aria-hidden="true">
+        <div class="phone">
+          <div class="row h"><span>Today</span></div>
+          <div class="row"><b>G</b><span>Green Market<small>groceries → credit card</small></span><em class="neg">-$96.30</em></div>
+          <div class="row"><b>B</b><span>Bean There<small>coffee → cash</small></span><em class="neg">-$4.75</em></div>
+          <div class="row h"><span>Yesterday</span></div>
+          <div class="row"><b>A</b><span>Acme Corp<small>checking → salary</small></span><em class="pos">$3,200.00</em></div>
+          <div class="row"><b>L</b><span>Landlord<small>rent → checking</small></span><em class="neg">-$1,650.00</em></div>
+          <div class="bars"><i style="height:62%"></i><i style="height:48%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:66%"></i></div>
+        </div>
+      </section>
+
+      <section class="features">
+        {features.map((f) => (
+          <article class="card">
+            <h2>{f.t}</h2>
+            <p>{f.d}</p>
+          </article>
+        ))}
+      </section>
+
+      <section class="how card">
+        <h2>How it works</h2>
+        <ol>
+          <li><strong>Open</strong> a journal: import files, open a folder, connect Dropbox, or clone a GitHub repository.</li>
+          <li><strong>hledger parses it</strong> in a background worker on your device. Nothing is uploaded anywhere.</li>
+          <li><strong>Edit</strong> with the forms or as text. PocketLedger patches only the lines you changed, and refuses to save anything hledger can't read.</li>
+        </ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>PocketLedger is free software under the GNU GPL v3 or later, and includes <a href="https://hledger.org">hledger</a> (GPL-3.0-or-later) by Simon Michael and contributors. Not affiliated with the hledger project.</p>
+      <p><a href="https://github.com/jackhale98/pocketledger-web">Source code</a></p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .land { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+  main { display: grid; gap: 48px; padding: 24px 0 48px; }
+  .hero { max-width: 680px; }
+  .eyebrow { color: var(--accent); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 18px; }
+  .lede { font-size: 1.15rem; color: var(--text-2); max-width: 600px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 12px; }
+  .big { min-height: 50px; padding: 0 22px; font-size: 1rem; }
+  .fine { font-size: 0.85rem; color: var(--text-3); }
+  .mock { display: flex; justify-content: center; }
+  .phone { width: min(360px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: 28px; padding: 14px; box-shadow: var(--shadow-3); }
+  .row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 6px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+  .row.h { grid-template-columns: 1fr; font-size: 0.75rem; font-weight: 700; color: var(--text-2); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; border: 0; margin-top: 4px; }
+  .row b { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-strong); }
+  .row span { display: grid; font-weight: 600; }
+  .row small { font-weight: 400; color: var(--text-3); font-size: 0.78rem; }
+  .row em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bars { display: flex; align-items: flex-end; gap: 8px; height: 90px; padding: 14px 6px 0; }
+  .bars i { flex: 1; background: var(--chart-1); border-radius: 4px 4px 0 0; }
+  .bars i:nth-child(even) { background: var(--chart-2); }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .features article { padding: 20px; }
+  .features h2 { font-size: 1.05rem; margin-bottom: 8px; }
+  .features p { color: var(--text-2); font-size: 0.95rem; }
+  .how { padding: 24px; }
+  .how h2 { margin-bottom: 12px; }
+  .how ol { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--text-2); }
+  footer { border-top: 1px solid var(--border); padding: 24px 0 40px; color: var(--text-3); font-size: 0.85rem; display: grid; gap: 6px; }
+  @media (min-width: 900px) {
+    main { grid-template-columns: 1.2fr 1fr; align-items: center; }
+    .features, .how { grid-column: 1 / -1; }
+  }
+</style>

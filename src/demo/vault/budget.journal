@@ -1,0 +1,10 @@
+; Monthly budget goals (periodic transactions). See Budget.
+~ monthly from 2026-05
+    expenses:rent             $1,650.00
+    expenses:groceries          $520.00
+    expenses:dining             $220.00
+    expenses:coffee              $45.00
+    expenses:transport          $120.00
+    expenses:utilities          $160.00
+    expenses:subscriptions       $40.00
+    assets:checking
