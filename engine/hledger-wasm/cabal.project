@@ -1,0 +1,118 @@
+-- hledger 1.52.4 as a wasm32-wasi reactor module (pocketledger-web, Option B).
+--
+--   wasm32-wasi-cabal build hledger-reactor --project-dir engine/hledger-wasm
+--
+-- (engine/scripts/build.sh does all of it: toolchain, sources, build, optimise.)
+--
+-- cabal.project comments are `--`; a `#` is a parse error.
+--
+-- hledger's sources are an unmodified clone of tag hledger-1.52.4, fetched by
+-- build.sh into engine/artifacts/vendor/hledger (git-ignored). Nothing in
+-- vendor/ is edited. What it takes to build for wasm lives here instead:
+--
+--   * three local stand-in packages (stubs/) that shadow the Hackage ones:
+--       terminal-size  ioctl-based; WASI has none. Answers "not a terminal".
+--       req,           only used by `hledger setup`'s latest-version check;
+--       http-client    stubbing them drops tls/crypton/memory/basement/network
+--                      and zlib, none of which cross-compile. Every request
+--                      throws, so no network access is possible.
+--     Prior art: lc-at/hledger-anywhere (hledger-wasm/*-stub) took the same
+--     route; the stubs here are re-written for this GPL-3.0 project.
+--
+--   * the boot-library pins below: the wasm bindist ships these, and cabal
+--     must use the shipped copies rather than rebuild them from Hackage.
+--     Same list as ghc-wasm-meta's cabal.project.local and choai/wasm.
+
+packages:
+  .
+  ../artifacts/vendor/hledger/hledger-lib
+  ../artifacts/vendor/hledger/hledger
+  stubs/terminal-size
+  stubs/req
+  stubs/http-client
+
+-- hledger's own optimisation defaults are kept (-O1 via ghc-wasm-meta).
+-- choai/wasm measured -O2 as +62% size for +4% speed.
+
+allow-newer:
+  all:Cabal,
+  all:Cabal-syntax,
+  all:array,
+  all:base,
+  all:binary,
+  all:bytestring,
+  all:containers,
+  all:deepseq,
+  all:directory,
+  all:exceptions,
+  all:filepath,
+  all:ghc,
+  all:ghc-bignum,
+  all:ghc-boot,
+  all:ghc-boot-th,
+  all:ghc-compact,
+  all:ghc-experimental,
+  all:ghc-heap,
+  all:ghc-internal,
+  all:ghc-platform,
+  all:ghc-prim,
+  all:ghci,
+  all:haskeline,
+  all:hpc,
+  all:integer-gmp,
+  all:mtl,
+  all:os-string,
+  all:parsec,
+  all:pretty,
+  all:process,
+  all:rts,
+  all:semaphore-compat,
+  all:stm,
+  all:system-cxx-std-lib,
+  all:template-haskell,
+  all:text,
+  all:time,
+  all:transformers,
+  all:unix,
+  all:xhtml
+
+constraints:
+  Cabal installed,
+  Cabal-syntax installed,
+  array installed,
+  base installed,
+  binary installed,
+  bytestring installed,
+  containers installed,
+  deepseq installed,
+  directory installed,
+  exceptions installed,
+  file-io installed,
+  filepath installed,
+  ghc-bignum installed,
+  ghc-boot installed,
+  ghc-boot-th installed,
+  ghc-compact installed,
+  ghc-experimental installed,
+  ghc-heap installed,
+  ghc-internal installed,
+  ghc-platform installed,
+  ghc-prim installed,
+  ghci installed,
+  haskeline installed,
+  hpc installed,
+  integer-gmp installed,
+  mtl installed,
+  os-string installed,
+  parsec installed,
+  pretty installed,
+  process installed,
+  rts installed,
+  semaphore-compat installed,
+  stm installed,
+  system-cxx-std-lib installed,
+  template-haskell installed,
+  text installed,
+  time installed,
+  transformers installed,
+  unix installed

@@ -1,0 +1,17 @@
+cabal-version:      2.4
+name:               req
+version:            3.13.4
+synopsis:           wasm32-wasi stand-in for req (no network)
+description:
+  Shadows the Hackage package of the same name in engine/hledger-wasm's
+  cabal.project. Every request fails immediately with an HttpException, which
+  hledger's `setup` command already catches and reports as "(HTTP failure)".
+  This is what keeps price downloading / version checks unreachable and
+  removes tls/crypton/basement from the build.
+license:            GPL-3.0-or-later
+build-type:         Simple
+
+library
+  exposed-modules:  Network.HTTP.Req
+  build-depends:    base >=4 && <5, bytestring, text, http-client
+  default-language: Haskell2010

@@ -1,0 +1,20 @@
+cabal-version:      2.4
+name:               http-client
+version:            0.7.19
+synopsis:           wasm32-wasi stand-in for http-client (no network)
+description:
+  Shadows the Hackage package of the same name in engine/hledger-wasm's
+  cabal.project. hledger's only use of it is the `setup` command's
+  latest-version check, which pattern-matches on these exception
+  constructors. Removing the real package removes its C/network dependency
+  tree (network, zlib, and via req: tls, crypton, memory, basement), none of
+  which cross-compiles to wasm32-wasi. The approach follows
+  lc-at/hledger-anywhere; this file is written independently for
+  pocketledger-web.
+license:            GPL-3.0-or-later
+build-type:         Simple
+
+library
+  exposed-modules:  Network.HTTP.Client
+  build-depends:    base >=4 && <5, bytestring, http-types
+  default-language: Haskell2010
