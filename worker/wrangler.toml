@@ -1,0 +1,24 @@
+# Example Wrangler config for the optional PocketLedger proxy worker.
+# Copy, set your origins, then:  npx wrangler deploy
+#
+# The worker is stateless: no KV, D1, R2 or Durable Objects, and logs are off.
+
+name = "pocketledger-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+# Keep variables set in the Cloudflare dashboard when deploying (secrets are always kept).
+keep_vars = true
+
+# No request logs or traces: git bodies and Authorization headers never reach a log.
+[observability]
+enabled = false
+
+[vars]
+# Origins (scheme://host[:port]) allowed to use this worker — your PocketLedger site(s).
+ALLOWED_ORIGINS = "https://pocketledger.example.org,http://localhost:4321"
+# Optional extra git hosts beyond github.com, gitlab.com, bitbucket.org, codeberg.org:
+# EXTRA_GIT_HOSTS = "git.example.org"
+
+# "Sign in with GitHub" only (PATs need none of this). Secrets, never vars:
+#   npx wrangler secret put GITHUB_CLIENT_ID
+#   npx wrangler secret put GITHUB_CLIENT_SECRET
