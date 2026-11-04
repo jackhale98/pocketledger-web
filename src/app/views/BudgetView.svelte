@@ -8,6 +8,9 @@
   import { href, router } from '../state/router.svelte';
   import { styleOf } from '../lib/primary';
   import Icon from '../components/Icon.svelte';
+  import BarChart from '../components/charts/BarChart.svelte';
+  import { columnLabel } from '../lib/periods';
+  import { chartCommodity, fmtIn, numberIn } from '../lib/primary';
   import ErrorPanel from '../components/ErrorPanel.svelte';
 
   const now = new Date();
@@ -41,6 +44,26 @@
       .catch((e) => (error = e));
   });
 
+  // Budget vs actual over the six months ending with the shown month (expense goals).
+  let history = $state.raw<BudgetReport | null>(null);
+  const histCommodity = $derived(app.revision ? chartCommodity() : '');
+  $effect(() => {
+    const rev = app.revision;
+    const { end } = month;
+    const c = histCommodity;
+    if (!rev || !app.engine || !c) return;
+    const e = new Date(end + 'T00:00:00');
+    const b = new Date(e.getFullYear(), e.getMonth() - 6, 1);
+    const begin = `${b.getFullYear()}-${String(b.getMonth() + 1).padStart(2, '0')}-01`;
+    app.engine
+      .budget({ query: ['type:X'], period: { begin, end, interval: 'monthly' }, valueIn: c })
+      .then((r) => (history = r))
+      .catch(() => (history = null));
+  });
+  const histFmt = $derived(fmtIn(histCommodity, 0));
+  const histBudget = $derived(history ? history.totals.cells.map((cl) => numberIn(cl.budget ?? [], histCommodity)) : []);
+  const histActual = $derived(history ? history.totals.cells.map((cl) => numberIn(cl.actual, histCommodity)) : []);
+
   // One commodity per budget line: the budget's own.
   const q = (ma: MixedAmount | null | undefined, c: string) => dec(ma?.find((a) => a.commodity === c)?.quantity ?? '0');
   const lines = $derived.by(() => {
@@ -62,8 +85,18 @@
     return out;
   });
   const leaves = $derived(lines.filter((l) => !lines.some((x) => x.account.startsWith(l.account + ':'))));
-  const expenseLines = $derived(leaves.filter((l) => !l.income));
-  const incomeLines = $derived(leaves.filter((l) => l.income));
+  // Goals are classified by account type (inherited from parents), not by sign: the
+  // balancing posting of a budget rule (e.g. assets:checking) is not a goal.
+  const types = $derived(new Map(app.accounts.map((a) => [a.name, a.type])));
+  function typeOf(name: string) {
+    for (let n = name; n; n = n.includes(':') ? n.slice(0, n.lastIndexOf(':')) : '') {
+      const t = types.get(n);
+      if (t) return t;
+    }
+    return /^expenses?\b/i.test(name) ? 'X' : /^(income|revenues?)\b/i.test(name) ? 'R' : null;
+  }
+  const expenseLines = $derived(leaves.filter((l) => typeOf(l.account) === 'X'));
+  const incomeLines = $derived(leaves.filter((l) => typeOf(l.account) === 'R'));
   const unbudgeted = $derived(report?.rows.find((r) => r.account === '<unbudgeted>'));
   const totals = $derived.by(() => {
     const by = new Map<string, { budget: ReturnType<typeof dec>; actual: ReturnType<typeof dec> }>();
@@ -147,6 +180,22 @@
     </section>
   {/if}
 
+  {#if history && histBudget.some((v) => v > 0)}
+    <section class="card card-pad hist" aria-labelledby="hist-h">
+      <h3 id="hist-h" class="list-h flush">Budget vs actual over time</h3>
+      <BarChart
+        title="Spending budget and actual by month"
+        labels={history.columns.map((c) => columnLabel(c.begin, c.end))}
+        series={[
+          { name: 'Budget', color: 'var(--chart-3)', values: histBudget },
+          { name: 'Actual', color: 'var(--chart-2)', values: histActual },
+        ]}
+        format={histFmt}
+        prefix={histCommodity.length === 1 ? histCommodity : ''}
+      />
+    </section>
+  {/if}
+
   {#if unbudgeted?.cells[0]?.actual.length}
     <p class="muted small unb">Unbudgeted activity this month: {unbudgeted.cells[0].actual.map((a) => formatAmount(a)).join(', ')} · <a href={href('statements')}>See statements</a></p>
   {/if}
@@ -181,4 +230,6 @@
   .empty { display: grid; gap: 10px; justify-items: start; }
   .empty pre { background: var(--surface-2); padding: 12px; border-radius: var(--radius-s); font-family: var(--mono); font-size: 0.85rem; width: 100%; overflow-x: auto; }
   .unb { margin: 4px; }
+  .hist { margin-bottom: 12px; min-width: 0; }
+  .flush { padding: 0 0 10px; }
 </style>
