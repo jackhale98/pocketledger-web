@@ -25,6 +25,7 @@ export interface DropboxRemote {
   kind: 'dropbox';
   /** Folder in Dropbox, e.g. "/Finance". */
   folder: string;
+  /** Informational only: the provider keeps its change cursor in memory. */
   cursor?: string | null;
   account?: { name: string; email: string } | null;
 }
@@ -72,6 +73,9 @@ export interface VaultStore {
   /** Secrets (tokens) live in their own store; never synced, never exported. */
   getSecret(key: string): Promise<string | undefined>;
   setSecret(key: string, value: string | null): Promise<void>;
+  /** Atomic read-modify-write of one file (optional; the sync engine uses it when present). */
+  /** `fn` returns the record to write, `null` to delete, or `undefined` to leave it. */
+  updateFile?(vaultId: string, path: string, fn: (f: StoredFile | undefined) => StoredFile | null | undefined): Promise<StoredFile | undefined>;
 }
 
 export interface RemoteEntry {
@@ -90,6 +94,10 @@ export interface SyncProvider {
   delete(path: string, rev: string | null): Promise<void>;
   /** Opaque token that changes whenever anything under the vault changes (cheap change check). */
   revision(): Promise<string>;
+  /** Paths compare case-insensitively (Dropbox). */
+  readonly caseInsensitive?: boolean;
+  /** Upper bound on parallel writes (GitHub REST: 1, each write is a commit). */
+  readonly maxConcurrentWrites?: number;
 }
 
 export class RemoteConflict extends Error {
@@ -125,6 +133,8 @@ export interface FileConflict {
   remote: string;
   /** diff3 merge with conflict markers, for the resolver. */
   merged: string;
+  /** Provider revision of `remote`. */
+  remoteRev?: string;
 }
 
 export interface SyncResult {
