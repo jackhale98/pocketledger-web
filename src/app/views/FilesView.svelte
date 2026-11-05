@@ -46,7 +46,8 @@
     errors = [];
     try {
       const eol = (text ?? '').includes('\r\n') ? '\r\n' : '\n';
-      await app.commitFiles({ ...app.files, [file]: draft.replace(/\r?\n/g, eol) }, `edit ${file}`);
+      // While the journal doesn't load at all, allow step-by-step fixes.
+      await app.commitFiles({ ...app.files, [file]: draft.replace(/\r?\n/g, eol) }, `edit ${file}`, { skipValidation: !app.revision });
       editing = false;
       toasts.show('Saved', { tone: 'ok' });
     } catch (e) {
@@ -78,7 +79,39 @@
       toasts.show((e as Error).message, { tone: 'error' });
     }
   }
+  /** hledger's explanation without the location line and source excerpt. */
+  const summary = (msg: string) =>
+    msg
+      .split('\n')
+      .filter((l) => l.trim() && !/^\s*\d*\s*\|/.test(l) && !/^[^\s]+:\d+(-\d+)?(:\d+)?:\s*$/.test(l))
+      .slice(0, 2)
+      .join(' ');
   const files = $derived(Object.keys(app.files).sort());
+  let uploadDir = $state('');
+  async function uploadFiles(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const list = [...(input.files ?? [])];
+    input.value = '';
+    const dir = uploadDir.trim().replace(/^\/+|\/+$/g, '');
+    const next = { ...app.files };
+    const added: string[] = [];
+    for (const f of list) {
+      const path = (dir ? dir + '/' : '') + f.name;
+      if (!isEngineFile(path)) continue;
+      next[path] = await f.text();
+      added.push(path);
+    }
+    if (!added.length) {
+      toasts.show('Choose .journal, .rules, .csv or .prices files', { tone: 'error' });
+      return;
+    }
+    try {
+      await app.commitFiles(next, `upload ${added.join(', ')}`, { skipValidation: !app.revision });
+      toasts.show(`Added ${added.join(', ')}`, { tone: 'ok' });
+    } catch (err) {
+      toasts.show((err as Error).message, { tone: 'error' });
+    }
+  }
 </script>
 
 {#if !file}
@@ -99,6 +132,11 @@
     <input id="new-file" class="input mono" placeholder="2027.journal" bind:value={newName} disabled={app.readOnly} />
     <button class="btn" type="submit" disabled={!newName.trim() || app.readOnly}><Icon name="plus" size={18} /> New file</button>
   </form>
+  <div class="new up">
+    <label class="sr-only" for="up-dir">Folder for uploaded files</label>
+    <input id="up-dir" class="input mono" placeholder="folder (optional), e.g. 2025" bind:value={uploadDir} autocapitalize="off" disabled={app.readOnly} />
+    <label class="btn"><Icon name="upload" size={18} /> Upload files<input class="sr-only" type="file" multiple onchange={uploadFiles} disabled={app.readOnly} /></label>
+  </div>
   <p class="muted note">New files are only read by hledger once the root journal includes them (for example <code>include 2027.journal</code>).</p>
 {:else if text == null}
   <p class="muted">No file named {file}. <a href={href('files')}>All files</a></p>
@@ -120,7 +158,7 @@
     <label class="sr-only" for="file-edit">Contents of {file}</label>
     <textarea id="file-edit" class="input editor" bind:value={draft} spellcheck="false" autocapitalize="off"></textarea>
     <p class="live" role="status">
-      {#if liveErrors.length}<span class="neg"><Icon name="alert" size={16} /> {liveErrors[0]?.message.split('\n')[0]}{liveErrors[0]?.line ? ` (line ${liveErrors[0].line})` : ''}</span>
+      {#if liveErrors.length}<span class="neg"><Icon name="alert" size={16} /> {summary(liveErrors[0]!.message)}{liveErrors[0]?.line ? ` (${liveErrors[0].file ?? ''} line ${liveErrors[0].line})` : ''}</span>
       {:else}<span class="pos"><Icon name="check" size={16} /> hledger reads this</span>{/if}
     </p>
   {:else}
@@ -144,6 +182,7 @@
   li a:hover { background: var(--surface-2); }
   .size { margin-left: auto; font-size: 0.78rem; }
   .new { display: flex; gap: 8px; }
+  .new.up { margin-top: 8px; }
   .note { font-size: 0.8rem; margin-top: 8px; }
   .bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .bar h2 { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; }

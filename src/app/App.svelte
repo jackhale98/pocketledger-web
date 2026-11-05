@@ -3,9 +3,11 @@
   import { app } from './state/app.svelte';
   import { router, href } from './state/router.svelte';
   import { editor } from './state/editor.svelte';
+  import { settings } from './state/settings.svelte';
   import Icon from './components/Icon.svelte';
   import Toasts from './components/Toasts.svelte';
   import ErrorPanel from './components/ErrorPanel.svelte';
+  import MissingFiles from './components/MissingFiles.svelte';
   import TxnEditor from './components/TxnEditor.svelte';
   import TxnDetail from './components/TxnDetail.svelte';
   import VaultSwitcher from './components/VaultSwitcher.svelte';
@@ -33,6 +35,7 @@
   ] as const;
   const SECONDARY = [
     { view: 'statements', label: 'Statements', icon: 'scale' },
+    { view: 'recurring', label: 'Recurring rules', icon: 'repeat' },
     { view: 'import', label: 'Import CSV', icon: 'upload' },
     { view: 'reconcile', label: 'Reconcile', icon: 'check-circle' },
     { view: 'files', label: 'Files', icon: 'file' },
@@ -113,6 +116,7 @@
       <h1>{title}</h1>
       <div class="top-actions">
         {#if app.loading}<span class="updating" role="status">Updating…</span>{/if}
+        <button class="icon-btn" type="button" aria-pressed={settings.v.hideAmounts} onclick={() => settings.set('hideAmounts', !settings.v.hideAmounts)} aria-label={settings.v.hideAmounts ? 'Show amounts' : 'Hide amounts'} title={settings.v.hideAmounts ? 'Show amounts' : 'Hide amounts'}><Icon name={settings.v.hideAmounts ? 'eye-off' : 'eye'} /></button>
         {#if app.undoStack.length}
           <button class="icon-btn" type="button" onclick={() => app.undo()} aria-label="Undo {app.undoStack[app.undoStack.length - 1]?.label}" title="Undo"><Icon name="undo" /></button>
         {/if}
@@ -120,6 +124,12 @@
       </div>
     </header>
 
+    {#if app.isDemo && !['settings'].includes(view)}
+      <div class="banner demo" role="status">
+        <Icon name="info" size={18} /> You're exploring demo data; changes aren't kept.
+        <a class="btn small" href="{href('settings')}?add=1">Open or create your journal</a>
+      </div>
+    {/if}
     {#if app.readOnly}
       <div class="banner warn" role="status">
         <Icon name="lock" /> This vault is open for editing in another tab. This tab is read-only.
@@ -136,16 +146,20 @@
     <main id="main" tabindex="-1">
       {#if app.engineStatus === 'error'}
         <ErrorPanel title="The hledger engine could not start" errors={[{ kind: 'internal', message: app.engineError }]} />
-      {:else if app.loadErrors.length && !app.revision}
+      {:else if app.loadErrors.length && !app.revision && !['files', 'settings', 'more'].includes(view)}
+        <MissingFiles errors={app.loadErrors} />
         <ErrorPanel title="hledger could not read this journal" errors={app.loadErrors} />
+        <p class="recover">You can still fix it: edit files in <a href={href('files')}>Files</a>, or switch journals in <a href={href('settings')}>Settings</a>.</p>
       {:else}
         {#if app.loadErrors.length}
+          <MissingFiles errors={app.loadErrors} />
           <ErrorPanel title="The latest change could not be read; showing the last good version" errors={app.loadErrors} compact />
         {/if}
         {#if view === 'transactions'}<TransactionsView />
         {:else if view === 'accounts'}<AccountsView />
         {:else if view === 'account'}<RegisterView account={router.route.param} />
         {:else if view === 'reports'}<ReportsView />
+        {:else if view === 'recurring'}<ReportsView tab="forecast" />
         {:else if view === 'statements'}<StatementsView />
         {:else if view === 'budget'}<BudgetView />
         {:else if view === 'import'}<ImportView />
@@ -195,6 +209,9 @@
   main { flex: 1; padding: 12px 12px calc(var(--nav-h) + 88px + var(--safe-b)); width: 100%; max-width: 1180px; margin: 0 auto; outline: none; }
   .banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 12px 0; padding: 10px 14px; border-radius: var(--radius); font-size: 0.9rem; }
   .banner.warn { background: var(--warn-soft); color: var(--warn); }
+  .banner.demo { background: var(--accent-soft); color: var(--text); }
+  .banner.demo .btn { margin-left: auto; }
+  .recover { font-size: 0.9rem; color: var(--text-2); }
   .banner.err { background: var(--neg-soft); color: var(--neg); }
 
   .sidebar { display: none; }

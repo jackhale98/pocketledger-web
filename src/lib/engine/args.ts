@@ -17,6 +17,7 @@ export function queryArgs(opts: QueryOpts = {}): string[] {
   if (opts.forecast) a.push(typeof opts.forecast === 'string' ? `--forecast=${opts.forecast}` : '--forecast');
   if (opts.auto) a.push('--auto');
   if (opts.date2) a.push('--date2');
+  if (opts.empty) a.push('-E');
   if (opts.accumulation === 'cumulative') a.push('--cumulative');
   if (opts.accumulation === 'historical') a.push('--historical');
   if (opts.query?.length) a.push(...opts.query.filter((q) => q.trim() !== ''));

@@ -26,6 +26,22 @@
     open = false;
     onclose?.();
   }
+
+  // Browser / Android back closes the sheet instead of leaving the page:
+  // opening pushes a history entry; going back pops it and closes.
+  $effect(() => {
+    if (!open || typeof window === 'undefined') return;
+    history.pushState({ plSheet: id }, '');
+    const onPop = () => {
+      if (history.state?.plSheet !== id && open) close();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // Closed from the UI: drop our history entry if it is still the current one.
+      if (history.state?.plSheet === id) history.back();
+    };
+  });
 </script>
 
 <dialog

@@ -27,6 +27,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       try {
         const t = localStorage.getItem('pl:theme');
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        if (JSON.parse(localStorage.getItem('pl:settings') || '{}').hideAmounts) document.documentElement.setAttribute('data-private', '');
       } catch {}
     </script>
   </head>

@@ -9,6 +9,8 @@ export interface Settings {
   showCleared: boolean;
   strictChecks: string[];
   perfOverlay: boolean;
+  /** Blur every amount on screen (privacy in public). */
+  hideAmounts: boolean;
 }
 
 const defaults: Settings = {
@@ -19,6 +21,7 @@ const defaults: Settings = {
   showCleared: true,
   strictChecks: [],
   perfOverlay: false,
+  hideAmounts: false,
 };
 
 function read(): Settings {
@@ -35,6 +38,7 @@ class SettingsStore {
     this.v[k] = value;
     try {
       localStorage.setItem(KEY, JSON.stringify(this.v));
+      if (k === 'hideAmounts') document.documentElement.toggleAttribute('data-private', !!value);
       if (k === 'theme') {
         if (value === 'system') delete document.documentElement.dataset.theme;
         else document.documentElement.dataset.theme = value as string;

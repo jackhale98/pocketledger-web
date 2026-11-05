@@ -1,5 +1,5 @@
 // Date range presets, as hledger begin (inclusive) / end (exclusive) dates.
-export type PresetId = 'all' | 'this-month' | 'last-month' | 'last-3' | 'last-6' | 'this-year' | 'last-year' | 'last-12' | 'custom';
+export type PresetId = 'all' | 'this-month' | 'last-month' | 'last-3' | 'last-6' | 'this-quarter' | 'last-quarter' | 'this-year' | 'last-year' | 'last-12' | 'custom';
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const monthStart = (y: number, m: number) => iso(new Date(y, m, 1));
@@ -8,10 +8,13 @@ export const PRESETS: { id: PresetId; label: string }[] = [
   { id: 'this-month', label: 'This month' },
   { id: 'last-month', label: 'Last month' },
   { id: 'last-3', label: '3 months' },
+  { id: 'this-quarter', label: 'This quarter' },
+  { id: 'last-quarter', label: 'Last quarter' },
   { id: 'this-year', label: 'This year' },
   { id: 'last-12', label: '12 months' },
   { id: 'last-year', label: 'Last year' },
   { id: 'all', label: 'All time' },
+  { id: 'custom', label: 'Custom' },
 ];
 
 export function presetRange(id: PresetId, today = new Date()): { begin?: string; end?: string } {
@@ -21,6 +24,8 @@ export function presetRange(id: PresetId, today = new Date()): { begin?: string;
     case 'this-month': return { begin: monthStart(y, m), end: monthStart(y, m + 1) };
     case 'last-month': return { begin: monthStart(y, m - 1), end: monthStart(y, m) };
     case 'last-3': return { begin: monthStart(y, m - 2), end: monthStart(y, m + 1) };
+    case 'this-quarter': return { begin: monthStart(y, m - (m % 3)), end: monthStart(y, m - (m % 3) + 3) };
+    case 'last-quarter': return { begin: monthStart(y, m - (m % 3) - 3), end: monthStart(y, m - (m % 3)) };
     case 'last-6': return { begin: monthStart(y, m - 5), end: monthStart(y, m + 1) };
     case 'this-year': return { begin: `${y}-01-01`, end: `${y + 1}-01-01` };
     case 'last-year': return { begin: `${y - 1}-01-01`, end: `${y}-01-01` };

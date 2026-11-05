@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   // Reports hub: Overview, Table, Account, Forecast, Prices, Stats — one filter bar for all.
   import { reportFilters as f, type ReportTab } from '../state/reports.svelte';
   import FilterBar from './reports/FilterBar.svelte';
@@ -17,6 +18,12 @@
     ['prices', 'Prices'],
     ['stats', 'Stats'],
   ];
+  let { tab }: { tab?: ReportTab } = $props();
+  // Opened as a shortcut (e.g. #/recurring): start on that tab, then let the user move on.
+  $effect(() => {
+    const t = tab;
+    if (t) untrack(() => select(t));
+  });
   const select = (t: ReportTab) => {
     f.tab = t;
     f.save();

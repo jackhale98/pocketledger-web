@@ -180,3 +180,31 @@ every report, Value in; chart interval and forecast on Overview). Returns use
 the valuation one — PocketLedger's rule. Prices come from `hledger prices
 --infer-market-prices` (P directives and costs). Statistics combine hledger's
 `stats` text with activity computed from the transaction list.
+
+## D-020 Large journals: a transaction window instead of the whole journal
+
+Profiling the app's real traffic showed `print -O json` of every transaction
+(used to fill the Transactions list on open and after every save) dominating:
+23.5 s to open and 20.7 s to save a 20,000-transaction journal. The app now
+validates with `hledger stats` and loads a recent window of about 500
+transactions, with older ones fetched on scroll; search uses hledger queries;
+registers show 12 months by default; dependent screens (detail from a register
+row, import duplicate detection, payee autofill, Stats) ask hledger instead of
+the in-memory list. Open/save at 20k: 6.6 s / 5.5 s; at 5k: 2.2 s / 2.0 s.
+
+Not done (needs a decision): making hledger emit compact JSON (one-line change
+in hledger-lib's `toJsonText`, 3–5× faster JSON output). That modifies hledger's
+source, which the plan forbids except as a last resort, and requires rebuilding
+and republishing the engine. Goldens would compare parsed JSON instead of bytes.
+
+## D-021 Parity follow-ups from the PocketLedger audit
+
+Done: re-finding a transaction by its exact text before saving or deleting (a
+sync or another tab can move it), secondary dates kept by the form, posting
+notes, multi-line comments, year-named target file by default, reconciliation
+clears postings rather than whole transactions (with ± and currency, finish
+anyway, search, edit link), missing included files can be uploaded and no
+longer block Files/Settings, folder vaults re-read the disk on open and focus,
+Accounts search / expand / collapse / show zero / remembered state, hide
+amounts, demo banner, browser back closes sheets, quarter and custom ranges,
+recurring rules reachable from More and Budget.

@@ -138,3 +138,37 @@ engine bump.
    release asset and opens a PR updating `engine/wasm.lock`.
 3. Regenerate goldens with the matching native hledger; review JSON changes
    in the decoders (`src/lib/engine/decode/`).
+
+## Large journals
+
+Benchmarked with `PERF=1 ENGINE=reactor npx vitest run tests/perf` (the app's
+real call sequence, `tests/perf/app.bench.test.ts`; synthetic journals from
+`tests/perf/make-journal.ts`), Node 22, reactor engine:
+
+| | 791 txns | 5,000 txns | 20,000 txns |
+|---|---:|---:|---:|
+| Open, before (`print -O json` of everything) | 1.6 s | 5.6 s | 23.5 s |
+| Open, now (`stats` + recent window + lists) | 1.1 s | 2.2 s | 6.6 s |
+| Save, before | 1.3 s | 5.7 s | 20.7 s |
+| Save, now (screen updates after parse + window) | 0.9 s | 2.0 s | 5.5 s |
+| Register of one account, before / now (12 months) | 0.01 / 0.01 s | 1.6 / 0.3 s | 6.8 / 1.6 s |
+| Dashboard reports (each) | 0.03–1.0 s | 0.05–0.3 s | 0.2–0.5 s |
+
+Where the time went: hledger's pretty-printed JSON. `print -O json` of 20,000
+transactions is 48 MB and took 19 s, while parsing the same journal takes
+4.6 s (native hledger: 1.4 s parse, 4.1 s print). So the app now:
+
+- validates with `hledger stats` (full parse with hledger's checks, tiny output);
+- loads only the most recent ~500 transactions (`src/lib/vault/window.ts`),
+  fetching older ones as you scroll;
+- runs searches as hledger queries over the whole journal (`expr:` per word);
+- shows the last 12 months of a register (running balance carried in with
+  `-H`) until asked for all;
+- refreshes payees, accounts and commodities in the background after a save.
+
+What remains is mostly hledger's parse, which runs ~3.5× slower in WebAssembly
+than natively and happens on every save (the reactor's parse cache is keyed by
+file content). The next lever would be compact JSON output: hledger's
+`toJsonText` (hledger-lib `Hledger/Data/Json.hs`) pretty-prints with
+aeson-pretty, which is 3–5× slower than `aeson.encode`. Changing it means
+patching hledger itself, so it is left as a decision (see DECISIONS D-020).

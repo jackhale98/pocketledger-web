@@ -5,6 +5,7 @@
   let { items }: { items: readonly { view: string; label: string; icon: string }[] } = $props();
   const DESC: Record<string, string> = {
     statements: 'Balance sheet, income statement, cash flow',
+    recurring: 'Budgets and forecasts from ~ rules',
     import: 'Bring in bank CSVs with hledger rules',
     reconcile: 'Match an account against a statement',
     files: 'View and edit journal files as text',

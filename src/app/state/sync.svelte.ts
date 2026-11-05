@@ -9,7 +9,7 @@ import { GitHubRestProvider, githubSecretKey } from '$lib/git';
 import type { IsoGitWorkspace } from '$lib/git/workspace';
 import { TabCoordinator } from '$lib/pwa/tabs';
 import { dropboxAppKey } from '$lib/config';
-import { makeSnapshot } from '$lib/vault';
+import { makeSnapshot, isEngineFile } from '$lib/vault';
 import { persistStorage } from '$lib/pwa/register';
 import { app } from './app.svelte';
 import { toasts } from './toast.svelte';
@@ -116,6 +116,10 @@ async function attach(vault: VaultRecord) {
   const store = app.getStore();
   if (!store) return;
   await refreshPending();
+  if (vault.provider === 'fsa') {
+    await rescanFolder(vault);
+    return;
+  }
   try {
     if (vault.provider === 'dropbox') {
       provider = DropboxProvider.forVault(vault, store, { appKey: dropboxAppKey() ?? '' });
@@ -214,6 +218,53 @@ async function writeFolder(vault: VaultRecord, paths: string[]) {
       await w.close();
     }
   }
+  // Written: the folder now matches, so these are no longer pending.
+  if (store) {
+    const done = (await store.listFiles(vault.id)).filter((f) => paths.includes(f.path));
+    await store.putFiles(done.filter((f) => !f.deleted).map((f) => ({ ...f, base: f.text, dirty: false })));
+    for (const f of done.filter((f) => f.deleted)) await store.deleteFile(vault.id, f.path);
+  }
+}
+
+/**
+ * Re-read a folder vault from disk (on open and when the app returns to the
+ * foreground), so edits made outside the app are picked up. Files with local
+ * changes not yet written are left alone. Never prompts for permission.
+ */
+async function rescanFolder(vault: VaultRecord) {
+  const store = app.getStore();
+  const dir = (await store?.getSetting<FileSystemDirectoryHandle>(`fsa:${vault.id}`)) ?? null;
+  if (!store || !dir) return;
+  const h = dir as unknown as { queryPermission(o: object): Promise<string> };
+  if ((await h.queryPermission({ mode: 'read' }).catch(() => 'denied')) !== 'granted') return;
+  const disk = new Map<string, string>();
+  async function walk(d: FileSystemDirectoryHandle, prefix: string) {
+    for await (const [name, entry] of (d as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+      if (name.startsWith('.')) continue;
+      const path = prefix + name;
+      if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path + '/');
+      else if (isEngineFile(path)) disk.set(path, await (await (entry as FileSystemFileHandle).getFile()).text());
+    }
+  }
+  try {
+    await walk(dir, '');
+  } catch {
+    return;
+  }
+  const stored = new Map((await store.listFiles(vault.id)).map((f) => [f.path, f]));
+  const updates = [];
+  for (const [path, text] of disk) {
+    const f = stored.get(path);
+    if (f?.dirty) continue;
+    if (!f || f.text !== text) updates.push({ vaultId: vault.id, path, text, base: text, baseRev: null, dirty: false, modifiedAt: Date.now() });
+  }
+  const removed = [...stored.values()].filter((f) => !disk.has(f.path) && !f.dirty);
+  if (updates.length) await store.putFiles(updates);
+  for (const f of removed) await store.deleteFile(vault.id, f.path);
+  if (updates.length || removed.length) {
+    await reloadFromStore();
+    toasts.show(`Picked up ${updates.length + removed.length} change(s) from the folder`, { tone: 'info' });
+  }
 }
 
 // ------------------------------------------------------------------ start
@@ -233,6 +284,9 @@ export function startSync() {
     onChanged: () => void reloadFromStore(),
   });
   window.addEventListener('pl:edit-here', () => tabs?.editHere());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && app.vault?.provider === 'fsa' && !app.readOnly) void rescanFolder(app.vault);
+  });
 
   app.onSaved = (vault, paths) => {
     void persistStorage();

@@ -49,7 +49,9 @@
       });
   }
 
-  const range = $derived(presetRange(preset));
+  let customBegin = $state('');
+  let customEnd = $state('');
+  const range = $derived(preset === 'custom' ? { ...(customBegin ? { begin: customBegin } : {}), ...(customEnd ? { end: customEnd } : {}) } : presetRange(preset));
   /** Whether the list must come from hledger rather than the loaded window. */
   const needsEngine = $derived(isQuery || search.trim() !== '' || forecast || (!!app.txnsFrom && !!range.begin && range.begin < app.txnsFrom));
 
@@ -159,6 +161,12 @@
       <button class="chip" type="button" aria-pressed={preset === p.id} onclick={() => (preset = p.id)}>{p.label}</button>
     {/each}
   </div>
+  {#if preset === 'custom'}
+    <div class="custom">
+      <label class="field"><span>From</span><input class="input" type="date" bind:value={customBegin} /></label>
+      <label class="field"><span>Before</span><input class="input" type="date" bind:value={customEnd} /></label>
+    </div>
+  {/if}
   <div class="chips" role="group" aria-label="Status and order">
     {#each [['', 'Any status'], ['*', 'Cleared'], ['!', 'Pending'], ['u', 'Unmarked']] as [v, l] (v)}
       <button class="chip" type="button" aria-pressed={statusFilter === v} onclick={() => (statusFilter = v as typeof statusFilter)}>{l}</button>
@@ -229,6 +237,7 @@
   }
   .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
   .search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; height: 100%; color: var(--text); }
+  .custom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
   .chips::-webkit-scrollbar { display: none; }
   .qerr { font-size: 0.85rem; margin: 0 4px 10px; white-space: pre-wrap; }

@@ -49,6 +49,8 @@ export interface QueryOpts {
   auto?: boolean;
   /** Use secondary dates (--date2). */
   date2?: boolean;
+  /** Show accounts with zero balances too (-E). */
+  empty?: boolean;
   /** Balance accumulation for multi-period reports. */
   accumulation?: 'change' | 'cumulative' | 'historical';
 }

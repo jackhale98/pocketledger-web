@@ -131,3 +131,88 @@ test('expense breakdown drills into categories', async ({ page }) => {
   await page.getByRole('button', { name: /^rent/ }).click();
   await expect(page).toHaveURL(/#\/account\/expenses:rent/);
 });
+
+test('search runs as an hledger query across the journal', async ({ page }) => {
+  await openDemo(page);
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('coffee');
+  await expect(page.locator('main li button.row').first()).toContainText('Bean There');
+  await expect(page.locator('main li button.row', { hasText: 'Landlord' })).toHaveCount(0);
+});
+
+test('reconciling clears only the matching posting, not the whole transaction', async ({ page }) => {
+  await openDemo(page);
+  // An uncleared card purchase to reconcile.
+  await page.getByRole('button', { name: /New transaction/ }).first().click().catch(() => page.getByRole('button', { name: 'New transaction' }).last().click());
+  const dialog = page.getByRole('dialog', { name: 'New transaction' });
+  await dialog.getByRole('combobox', { name: 'Description' }).fill('Bookshop | Birthday gift');
+  await dialog.getByRole('combobox', { name: 'Account 1' }).fill('expenses:gifts');
+  await dialog.getByRole('textbox', { name: 'Amount 1' }).fill('42');
+  await dialog.getByRole('combobox', { name: 'Account 2' }).fill('liabilities:credit card');
+  await dialog.getByRole('radio', { name: 'Pending' }).click();
+  await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page.goto('app/#/reconcile?account=liabilities:credit%20card');
+  const row = page.locator('main li', { hasText: 'Bookshop' });
+  await row.getByRole('checkbox').check();
+  page.once('dialog', (d) => void d.accept());
+  await page.getByRole('button', { name: /Finish anyway/ }).click();
+  await expect(page.getByText(/Cleared 1 posting/)).toBeVisible();
+  await page.goto('app/#/files');
+  const file = await page.locator('main li a', { hasText: '.journal' }).allInnerTexts();
+  void file;
+  await page.goto('app/#/transactions');
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('Bookshop');
+  await page.locator('main li button.row').first().click();
+  await page.getByRole('button', { name: 'Show source' }).click();
+  const code = page.getByRole('dialog', { name: 'Transaction' }).locator('pre.src');
+  // Header keeps its pending mark; only the card posting gets "*".
+  await expect(code).toContainText(/! Bookshop \| Birthday gift/);
+  await expect(code).toContainText(/\* liabilities:credit card/);
+});
+
+test('editing in the form keeps a secondary date', async ({ page }) => {
+  await openDemo(page);
+  const first = page.locator('main li button.row').first();
+  await first.click();
+  await page.getByRole('dialog', { name: 'Transaction' }).getByRole('button', { name: 'Edit text' }).click();
+  const edit = page.getByRole('dialog', { name: 'Edit transaction' });
+  const ta = edit.getByRole('textbox', { name: 'Journal text' });
+  const text = await ta.inputValue();
+  await ta.fill(text.replace(/^(\d{4}-\d\d-\d\d)/, '$1=$1'));
+  await expect(edit.getByText('hledger reads this')).toBeVisible();
+  await edit.getByRole('button', { name: 'Save' }).click();
+  await expect(edit).toBeHidden();
+  await first.click();
+  await page.getByRole('dialog', { name: 'Transaction' }).getByRole('button', { name: 'Edit', exact: true }).click();
+  await edit.getByRole('combobox', { name: 'Description' }).fill('Kept date2 check');
+  await edit.getByRole('button', { name: 'Save' }).click();
+  await expect(edit).toBeHidden();
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('Kept date2 check');
+  await page.locator('main li button.row').first().click();
+  await expect(page.getByRole('dialog', { name: 'Transaction' })).toContainText(/\d{4}-\d\d-\d\d = \d{4}-\d\d-\d\d/);
+});
+
+test('a missing included file can be uploaded to fix the journal', async ({ page }) => {
+  await openDemo(page);
+  // Import a journal whose included file wasn't copied along.
+  await page.goto('app/#/settings?add=1');
+  await page.locator('input[type=file][accept*=".journal"]').setInputFiles({
+    name: 'main.journal',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('include extra.journal\n\n2026-01-01 Opening\n    assets:cash  $10\n    equity:opening\n'),
+  });
+  await page.goto('app/#/transactions');
+  await expect(page.getByRole('heading', { name: 'Missing included files' })).toBeVisible();
+  await expect(page.getByText('extra.journal').first()).toBeVisible();
+  await page.locator('section.miss input[type=file]').setInputFiles({ name: 'extra.journal', mimeType: 'text/plain', buffer: Buffer.from('2026-01-02 Uploaded\n    expenses:gifts  $1\n    assets:cash\n') });
+  await expect(page.getByRole('heading', { name: 'Missing included files' })).toBeHidden();
+  await expect(page.locator('main li button.row', { hasText: 'Uploaded' })).toHaveCount(1);
+});
+
+test('hide amounts blurs every amount', async ({ page }) => {
+  await openDemo(page);
+  await page.getByRole('button', { name: 'Hide amounts' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-private', '');
+  await page.getByRole('button', { name: 'Show amounts' }).click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-private', '');
+});

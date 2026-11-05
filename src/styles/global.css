@@ -208,3 +208,13 @@ textarea.input { min-height: 120px; font-family: var(--mono); font-size: 0.9rem;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* Privacy: blur every amount (toggle in the top bar). */
+:root[data-private] .amount,
+:root[data-private] .num,
+:root[data-private] .chart .tick,
+:root[data-private] .chart .tip,
+:root[data-private] .rank .val {
+  filter: blur(7px);
+  transition: filter 120ms;
+}

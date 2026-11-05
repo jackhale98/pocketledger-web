@@ -6,6 +6,7 @@
   import { app } from '../state/app.svelte';
   import { settings } from '../state/settings.svelte';
   import { href, router } from '../state/router.svelte';
+  import { reportFilters } from '../state/reports.svelte';
   import { styleOf } from '../lib/primary';
   import Icon from '../components/Icon.svelte';
   import BarChart from '../components/charts/BarChart.svelte';
@@ -131,7 +132,8 @@
     expenses:groceries   $500
     expenses:dining      $200
     assets:checking</pre>
-    <p class="muted">Add one with the text editor (New transaction → Text), or in any journal file.</p>
+    <a class="btn primary" href={href('reports')} onclick={() => { reportFilters.tab = 'forecast'; reportFilters.save(); }}><Icon name="repeat" size={18} /> Add a budget rule</a>
+    <p class="muted">Budgets and forecasts share the same recurring rules (Reports → Forecast → Recurring rules).</p>
   </div>
 {:else}
   {#each totals as [c, t] (c)}
