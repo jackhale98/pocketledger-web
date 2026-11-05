@@ -1,55 +1,58 @@
 <script lang="ts">
-  // Journal statistics: hledger's own `stats`, plus activity and busiest accounts.
+  // Journal statistics, all from hledger (no full transaction list needed):
+  // `stats` for the summary, `balance --count` for activity and busiest accounts.
+  import { parseHledgerJson } from '$lib/engine/decode/json';
+  import { decodeBalance, decodePeriodic, type HBalanceReport, type HPeriodicReport } from '$lib/engine/decode/reports';
+  import { decodeStats } from '$lib/engine/decode/text';
   import { app } from '../../state/app.svelte';
   import { router } from '../../state/router.svelte';
   import { reportFilters as f } from '../../state/reports.svelte';
+  import { columnLabel } from '../../lib/periods';
   import BarChart from '../../components/charts/BarChart.svelte';
   import RankBars from '../../components/charts/RankBars.svelte';
 
   let text = $state('');
+  let summary = $state.raw<ReturnType<typeof decodeStats> | null>(null);
+  let months = $state.raw<{ label: string; n: number }[]>([]);
+  let busiest = $state.raw<{ name: string; value: number }[]>([]);
+
   $effect(() => {
     const rev = app.revision;
     const range = f.range;
     const words = f.words;
     if (!rev || !app.engine) return;
-    const args = ['stats', ...words];
-    if (range.begin) args.push('-b', range.begin);
-    if (range.end) args.push('-e', range.end);
-    app.engine.raw(args).then((r) => (text = r.code === 0 ? r.stdout.replace(/^Runtime stats.*$/m, '').trim() : r.stderr));
+    const engine = app.engine;
+    const period = [...(range.begin ? ['-b', range.begin] : []), ...(range.end ? ['-e', range.end] : [])];
+    (async () => {
+      const st = await engine.raw(['stats', ...period, ...words]);
+      text = st.code === 0 ? st.stdout.replace(/^Runtime stats.*$/m, '').trim() : st.stderr;
+      summary = st.code === 0 ? decodeStats(st.stdout) : null;
+      const act = await engine.raw(['balance', '--count', '-M', '--depth', '1', ...period, ...words, '-O', 'json']);
+      if (act.code === 0) {
+        const r = decodePeriodic(parseHledgerJson<HPeriodicReport>(act.stdout));
+        months = r.columns.map((c, i) => ({ label: columnLabel(c.begin, c.end), n: Number(r.totals.amounts[i]?.[0]?.quantity ?? 0) }));
+      }
+      const acc = await engine.raw(['balance', '--count', '--flat', ...period, ...words, '-O', 'json']);
+      if (acc.code === 0) busiest = decodeBalance(parseHledgerJson<HBalanceReport>(acc.stdout)).rows.map((r) => ({ name: r.account, value: Number(r.amount[0]?.quantity ?? 0) }));
+    })();
   });
 
-  const txns = $derived.by(() => {
-    const { begin, end } = f.range;
-    return app.txns.filter((t) => (!begin || t.date >= begin) && (!end || t.date < end));
-  });
-  const months = $derived.by(() => {
-    const m = new Map<string, number>();
-    for (const t of txns) m.set(t.date.slice(0, 7), (m.get(t.date.slice(0, 7)) ?? 0) + 1);
-    return [...m.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
-  });
-  const busiest = $derived.by(() => {
-    const m = new Map<string, number>();
-    for (const t of txns) for (const p of t.postings) m.set(p.account, (m.get(p.account) ?? 0) + 1);
-    return [...m.entries()].map(([name, value]) => ({ name, value }));
-  });
-  const postings = $derived(txns.reduce((n, t) => n + t.postings.length, 0));
-  const first = $derived(txns[0]?.date ?? '—');
-  const last = $derived(txns[txns.length - 1]?.date ?? '—');
-  const perMonth = $derived(months.length ? (txns.length / months.length).toFixed(1) : '0');
+  const postings = $derived(months.reduce((n, m) => n + m.n, 0));
+  const perMonth = $derived(summary && months.length ? (summary.transactions / months.length).toFixed(1) : '0');
 </script>
 
 <section class="tiles" aria-label="Summary">
-  <div class="tile card"><p class="label">Transactions</p><p class="big num">{txns.length}</p></div>
+  <div class="tile card"><p class="label">Transactions</p><p class="big num">{summary?.transactions ?? '…'}</p></div>
   <div class="tile card"><p class="label">Postings</p><p class="big num">{postings}</p></div>
   <div class="tile card"><p class="label">Per month</p><p class="big num">{perMonth}</p></div>
-  <div class="tile card"><p class="label">Span</p><p class="mid num">{first} → {last}</p></div>
+  <div class="tile card"><p class="label">Span</p><p class="mid num">{summary?.firstDate ?? '—'} → {summary?.lastDate ?? '—'}</p></div>
 </section>
 
 <section class="card card-pad" aria-labelledby="act-h">
-  <h2 id="act-h">Activity</h2>
+  <h2 id="act-h">Postings per month</h2>
   {#if months.length}
-    <BarChart title="Transactions per month" labels={months.map(([m]) => m.slice(2))} series={[{ name: 'Transactions', color: 'var(--chart-1)', values: months.map(([, n]) => n) }]} format={(v) => `${v} transactions`} />
-  {:else}<p class="muted">No transactions in this period.</p>{/if}
+    <BarChart title="Postings per month" labels={months.map((m) => m.label)} series={[{ name: 'Postings', color: 'var(--chart-1)', values: months.map((m) => m.n) }]} format={(v) => `${v} postings`} />
+  {:else}<p class="muted">No activity in this period.</p>{/if}
 </section>
 
 <section class="card card-pad" aria-labelledby="busy-h">

@@ -30,6 +30,7 @@ if GROCER|MARKET
   let rulesText = $state('');
   let rulesDirty = $state(false);
   let preview = $state.raw<CsvPreview | null>(null);
+  let existing = $state.raw<Txn[]>([]);
   let busy = $state(false);
   let selected = $state<Set<number>>(new Set());
   let targetFile = $state(app.addTargetFile());
@@ -68,8 +69,17 @@ if GROCER|MARKET
     timer = setTimeout(async () => {
       busy = true;
       const rp = rulesPath || `${c}.rules`;
-      preview = await app.engine!.csvPreview(c, rp, { [c]: csvText, [rp]: rules });
-      selected = new Set(preview.txns.map((t, i) => (isDuplicate(t) ? -1 : i)).filter((i) => i >= 0));
+      const p = await app.engine!.csvPreview(c, rp, { [c]: csvText, [rp]: rules });
+      // Existing transactions in the CSV's date range (hledger query; the loaded window may not reach back that far).
+      const dates = p.txns.map((t) => t.date).sort();
+      existing = [];
+      if (dates.length) {
+        const end = new Date(dates[dates.length - 1]! + 'T00:00:00Z');
+        end.setUTCDate(end.getUTCDate() + 1);
+        existing = await app.engine!.transactions({ period: { begin: dates[0]!, end: end.toISOString().slice(0, 10) } }).catch(() => []);
+      }
+      preview = p;
+      selected = new Set(p.txns.map((t, i) => (isDuplicate(t) ? -1 : i)).filter((i) => i >= 0));
       busy = false;
     }, 350);
   });
@@ -79,7 +89,7 @@ if GROCER|MARKET
     const sig = (x: Txn) => x.postings.flatMap((p) => p.amount.map((a) => `${a.commodity}${Number(a.quantity)}`)).sort().join('|');
     const s = sig(t);
     const accts = new Set(t.postings.map((p) => p.account));
-    return app.txns.some((x) => x.date === t.date && sig(x) === s && x.postings.some((p) => accts.has(p.account)));
+    return existing.some((x) => x.date === t.date && sig(x) === s && x.postings.some((p) => accts.has(p.account)));
   }
   const dupes = $derived(new Set(preview?.txns.map((t, i) => (isDuplicate(t) ? i : -1)).filter((i) => i >= 0) ?? []));
 
@@ -165,7 +175,11 @@ if GROCER|MARKET
     {#if preview?.errors.length}
       <div class="card-pad"><ErrorPanel title="hledger couldn't convert this CSV with these rules" errors={preview.errors} compact /></div>
     {:else if preview}
-      <p class="card-pad muted small">{preview.txns.length} transactions · {dupes.size} look already imported · {selected.size} selected</p>
+      <div class="card-pad sel">
+        <p class="muted small">{preview.txns.length} transactions · {dupes.size} look already imported · {selected.size} selected</p>
+        <button class="btn small ghost" type="button" onclick={() => (selected = new Set(preview!.txns.map((_, i) => i)))}>Select all</button>
+        <button class="btn small ghost" type="button" onclick={() => (selected = new Set())}>None</button>
+      </div>
       <ul class="rows">
         {#each preview.txns as t, i (i)}
           <li class:dupe={dupes.has(i)}>
@@ -207,6 +221,8 @@ if GROCER|MARKET
   .pick select { width: auto; min-width: 200px; }
   .grow { flex: 1; min-width: 200px; }
   .small { font-size: 0.82rem; }
+  .sel { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .sel p { margin-right: auto; }
   .check { display: flex; gap: 8px; align-items: center; font-size: 0.88rem; }
   .rows { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow: auto; border-top: 1px solid var(--border); }
   .rows li + li { border-top: 1px solid var(--border); }

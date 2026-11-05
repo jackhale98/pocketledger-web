@@ -35,14 +35,32 @@
   });
 
   /** Looks like hledger query syntax: run it through hledger instead of filtering here. */
-  const isQuery = $derived(/(^|\s)(not:)?(acct|desc|payee|note|amt|date|date2|tag|status|cur|code|real|depth|expr):/.test(search));
+  const isQuery = $derived(/(^|\s)(not:)?(acct|desc|payee|note|amt|date|date2|tag|status|cur|code|real|depth|expr|type):/i.test(search));
+
+  /** Plain words become an hledger query over the whole journal: each word must match the description, an account, a note or (if numeric) an amount. */
+  function wordsQuery(text: string): string[] {
+    return text
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => {
+        const re = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const num = /^-?\d+(\.\d+)?$/.test(w) ? ` or amt:${w.replace(/^-/, '')} or amt:-${w.replace(/^-/, '')}` : '';
+        return `expr:desc:${re} or acct:${re} or note:${re} or code:${re}${num}`;
+      });
+  }
+
+  const range = $derived(presetRange(preset));
+  /** Whether the list must come from hledger rather than the loaded window. */
+  const needsEngine = $derived(isQuery || search.trim() !== '' || forecast || (!!app.txnsFrom && !!range.begin && range.begin < app.txnsFrom));
 
   let qtimer: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
-    const q = search;
+    const q = search.trim();
     const rev = app.revision;
     const fc = forecast;
-    if ((!isQuery && !fc) || !rev) {
+    const r = range;
+    const query = isQuery;
+    if (!needsEngine || !rev) {
       queryResult = null;
       queryError = '';
       return;
@@ -50,10 +68,13 @@
     clearTimeout(qtimer);
     qtimer = setTimeout(async () => {
       try {
-        queryResult = await app.engine!.transactions({ ...(isQuery ? { query: splitQuery(q) } : {}), ...(fc ? { forecast: true } : {}) });
+        queryResult = await app.engine!.transactions({
+          ...(q ? { query: query ? splitQuery(q) : wordsQuery(q) } : {}),
+          ...(r.begin || r.end ? { period: r } : {}),
+          ...(fc ? { forecast: true } : {}),
+        });
         queryError = '';
       } catch (e) {
-        queryResult = [];
         queryError = e instanceof EngineCallError ? (e.errors[0]?.message ?? 'Invalid query') : (e as Error).message;
       }
     }, 300);
@@ -80,20 +101,12 @@
     return { amount: sumMixed(...(pos.length ? pos : t.postings.slice(0, 1)).map((p) => p.amount)), tone: false };
   }
 
-  const range = $derived(presetRange(preset));
   const filtered = $derived.by(() => {
     let list = queryResult ?? app.txns;
     const { begin, end } = range;
     if (begin) list = list.filter((t) => t.date >= begin);
     if (end) list = list.filter((t) => t.date < end);
     if (statusFilter) list = list.filter((t) => (statusFilter === 'u' ? t.status === '' : t.status === statusFilter));
-    if (!isQuery && search.trim()) {
-      const words = search.toLowerCase().split(/\s+/).filter(Boolean);
-      list = list.filter((t) => {
-        const hay = `${t.description} ${t.code} ${t.comment} ${t.postings.map((p) => `${p.account} ${p.amount.map((a) => a.quantity).join(' ')}`).join(' ')}`.toLowerCase();
-        return words.every((w) => hay.includes(w));
-      });
-    }
     const sorted = [...list].sort((a, b) => (a.date === b.date ? a.index - b.index : a.date < b.date ? -1 : 1));
     return newest ? sorted.reverse() : sorted;
   });
@@ -110,12 +123,20 @@
   let sentinel: HTMLElement | undefined = $state();
   $effect(() => {
     if (!sentinel) return;
-    const io = new IntersectionObserver((e) => e[0]?.isIntersecting && (limit += 150), { rootMargin: '600px' });
+    const io = new IntersectionObserver(
+      (e) => {
+        if (!e[0]?.isIntersecting) return;
+        if (limit < filtered.length) limit += 150;
+        else if (!needsEngine && app.txnsFrom) void app.loadOlder();
+      },
+      { rootMargin: '600px' },
+    );
     io.observe(sentinel);
     return () => io.disconnect();
   });
+  // Back to the top of the list only when the filters change (not on every save).
   $effect(() => {
-    void filtered;
+    void [search, preset, statusFilter, newest, forecast];
     limit = 150;
   });
 
@@ -130,7 +151,7 @@
   <div class="search">
     <Icon name="search" size={18} />
     <label class="sr-only" for="txn-search">Search transactions</label>
-    <input id="txn-search" type="search" placeholder="Search, or an hledger query like acct:food amt:>50" bind:value={search} autocomplete="off" spellcheck="false" />
+    <input id="txn-search" type="search" placeholder="Search, or an hledger query like acct:food amt:>50" bind:value={search} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" />
     {#if isQuery}<span class="badge ok" title="Filtered by hledger">hledger query</span>{/if}
   </div>
   <div class="chips" role="group" aria-label="Date range">
@@ -160,10 +181,13 @@
   <div class="empty card card-pad">
     <Icon name="search" size={28} />
     <p>No transactions match.</p>
-    {#if app.txns.length === 0}<button class="btn primary" type="button" onclick={() => editor.openNew()}><Icon name="plus" /> Add your first transaction</button>{/if}
+    {#if (app.stats?.transactions ?? 0) === 0}<button class="btn primary" type="button" onclick={() => editor.openNew()}><Icon name="plus" /> Add your first transaction</button>{/if}
   </div>
 {:else}
-  <p class="count muted" aria-live="polite">{filtered.length} transaction{filtered.length === 1 ? '' : 's'}</p>
+  <p class="count muted" aria-live="polite">
+    {filtered.length} transaction{filtered.length === 1 ? '' : 's'}{#if !needsEngine && app.stats}&nbsp;of {app.stats.transactions}{/if}
+    {#if !needsEngine && app.txnsFrom}· since {app.txnsFrom}, older load as you scroll{/if}
+  </p>
   <div class="card list">
     {#each groups as g (g.date)}
       <section aria-labelledby="d-{g.date}">
@@ -191,6 +215,9 @@
       </section>
     {/each}
     <div bind:this={sentinel} aria-hidden="true"></div>
+    {#if !needsEngine && app.txnsFrom && limit >= filtered.length}
+      <div class="older"><button class="btn small ghost" type="button" disabled={app.loadingOlder} onclick={() => app.loadOlder()}>{app.loadingOlder ? 'Loading older…' : 'Load older transactions'}</button></div>
+    {/if}
   </div>
 {/if}
 
@@ -206,6 +233,7 @@
   .chips::-webkit-scrollbar { display: none; }
   .qerr { font-size: 0.85rem; margin: 0 4px 10px; white-space: pre-wrap; }
   .count { font-size: 0.8rem; margin: 0 4px 6px; }
+  .older { display: flex; justify-content: center; padding: 10px; border-top: 1px solid var(--border); }
   .list { overflow: clip; }
   .day {
     position: sticky; top: 56px; z-index: 1; display: flex; justify-content: space-between; padding: 8px 16px;

@@ -14,15 +14,24 @@
   let rows = $state.raw<RegisterRow[] | null>(null);
   let error = $state.raw<EngineCallError | null>(null);
   let limit = $state(200);
+  /** Show only the last 12 months (with the running balance carried in) until asked for all. */
+  let all = $state(false);
+  const since = $derived.by(() => {
+    const last = app.stats?.lastDate;
+    if (!last || (app.stats?.transactions ?? 0) < 1500) return null;
+    const d = new Date(last + 'T00:00:00Z');
+    return `${d.getUTCFullYear() - 1}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  });
 
   $effect(() => {
     const rev = app.revision;
     const valueIn = settings.v.valueIn;
     const acct = account;
+    const begin = all ? null : since;
     if (!rev || !app.engine) return;
     rows = null;
     app.engine
-      .register(acct, valueIn ? { valueIn } : {})
+      .register(acct, { ...(valueIn ? { valueIn } : {}), ...(begin ? { period: { begin }, accumulation: 'historical' as const } : {}) })
       .then((r) => {
         rows = r;
         error = null;
@@ -33,8 +42,8 @@
   const crumbs = $derived(account.split(':').map((part, i, all) => ({ part, full: all.slice(0, i + 1).join(':') })));
   const current = $derived(rows?.length ? rows[rows.length - 1]!.balance : []);
 
-  function open(r: RegisterRow) {
-    const t = app.txns.find((x) => x.index === r.txnIndex);
+  async function open(r: RegisterRow) {
+    const t = await app.findTxn(r.txnIndex, r.date);
     if (t) editor.show(t);
   }
 </script>
@@ -84,7 +93,8 @@
         {/each}
       </tbody>
     </table>
-    {#if rows.length > limit}<button class="btn small ghost more" type="button" onclick={() => (limit += 300)}>Show more</button>{/if}
+    {#if rows.length > limit}<button class="btn small ghost more" type="button" onclick={() => (limit += 300)}>Show more</button>
+    {:else if since && !all}<button class="btn small ghost more" type="button" onclick={() => (all = true)}>Showing since {since} · show all history</button>{/if}
   </div>
 {/if}
 

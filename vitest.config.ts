@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/unit/**/*.test.ts', 'tests/fidelity/**/*.test.ts', 'tests/golden/**/*.test.ts', 'src/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/fidelity/**/*.test.ts', 'tests/golden/**/*.test.ts', 'src/**/*.test.ts', 'tests/perf/**/*.test.ts'],
     environment: 'node',
     testTimeout: 60_000,
     hookTimeout: 60_000,

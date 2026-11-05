@@ -10,7 +10,6 @@ import type {
   Engine,
   EngineError,
   EngineVersion,
-  JournalStats,
   LoadResult,
   PeriodicReport,
   QueryOpts,
@@ -35,7 +34,7 @@ import {
   type HCompoundReport,
   type HPeriodicReport,
 } from './decode/reports';
-import { decodeAccountTypes, decodeLines } from './decode/text';
+import { decodeAccountTypes, decodeLines, decodeStats } from './decode/text';
 
 export class EngineFailure extends Error {
   constructor(readonly errors: EngineError[]) {
@@ -62,7 +61,8 @@ export class HledgerEngine implements Engine {
   private snapshot: VaultSnapshot | null = null;
   private lines = new Map<string, string[]>();
   private cache = new Map<string, Promise<RawResult>>();
-  private txnCache: Txn[] | null = null;
+  /** Display styles seen in decoded amounts, per commodity. */
+  private styles = new Map<string, AmountStyle>();
 
   constructor(
     private readonly backend: EngineBackend,
@@ -104,14 +104,20 @@ export class HledgerEngine implements Engine {
     return parseHledgerJson<T>(await this.cmd([...command, '-O', 'json']));
   }
 
+  /**
+   * Mount and validate a snapshot. Uses `hledger stats`, which parses the whole
+   * journal with hledger's standard checks (balancing, assertions) but prints
+   * almost nothing: printing every transaction as JSON costs far more than the
+   * parse on large journals (see docs/ENGINE.md, "Large journals"). Callers fetch
+   * the transactions they show with transactions({ period }).
+   */
   async load(snapshot: VaultSnapshot): Promise<LoadResult> {
     const previous = this.snapshot;
     this.backend.mount(snapshot.files);
     this.snapshot = snapshot;
     this.cache.clear();
-    this.txnCache = null;
     this.lines.clear();
-    const r = await this.exec([...this.rootArgs(snapshot), 'print', '-O', 'json'], false);
+    const r = await this.exec([...this.rootArgs(snapshot), 'stats'], false);
     if (r.code !== 0) {
       const errors = decodeErrors(r.stderr, toVault, 'parse');
       // Keep serving the previous good snapshot.
@@ -119,34 +125,8 @@ export class HledgerEngine implements Engine {
       if (previous) this.backend.mount(previous.files);
       return { ok: false, errors };
     }
-    // Cache this result so transactions() without filters is free.
-    this.cache.set(`${snapshot.revision}\u0000${[...this.rootArgs(snapshot), 'print', '-O', 'json'].join('\u0001')}`, Promise.resolve(r));
-    const txns = this.decodeTxns(r.stdout);
-    this.txnCache = txns;
-    return { ok: true, stats: this.stats(txns) };
-  }
-
-  private stats(txns: Txn[]): JournalStats {
-    const accounts = new Set<string>();
-    const commodities = new Set<string>();
-    let first: string | null = null;
-    let last: string | null = null;
-    for (const t of txns) {
-      if (!first || t.date < first) first = t.date;
-      if (!last || t.date > last) last = t.date;
-      for (const p of t.postings) {
-        accounts.add(p.account);
-        for (const a of p.amount) commodities.add(a.commodity);
-      }
-    }
-    return {
-      transactions: txns.length,
-      accounts: accounts.size,
-      commodities: commodities.size,
-      firstDate: first,
-      lastDate: last,
-      files: Object.keys(this.snapshot?.files ?? {}),
-    };
+    const st = decodeStats(r.stdout);
+    return { ok: true, stats: { ...st, files: Object.keys(snapshot.files) } };
   }
 
   private sourceLines(file: string): string[] | undefined {
@@ -164,6 +144,7 @@ export class HledgerEngine implements Engine {
     const raw = parseHledgerJson<HTxn[]>(stdout);
     return raw.map((h) => {
       const t = decodeTxn(h, toVault);
+      for (const p of t.postings) for (const a of p.amount) if (!this.styles.has(a.commodity)) this.styles.set(a.commodity, a.style);
       return t.source ? markInferred(t, this.sourceLines(t.source.file)) : t;
     });
   }
@@ -184,7 +165,6 @@ export class HledgerEngine implements Engine {
 
   async transactions(opts: QueryOpts = {}): Promise<Txn[]> {
     const args = queryArgs(opts);
-    if (args.length === 0 && this.txnCache) return this.txnCache;
     const out = await this.cmd(['print', '-O', 'json', ...args]);
     return this.decodeTxns(out);
   }
@@ -227,20 +207,23 @@ export class HledgerEngine implements Engine {
     const declared = new Set<string>();
     for (const text of Object.values(this.snapshot?.files ?? {}))
       for (const m of text.matchAll(/^account[ \t]+(\S(?:.*?\S)?)(?=[ \t]{2,}|\t|[ \t]*;|[ \t]*$)/gm)) declared.add(m[1]!);
-    const used = new Set<string>();
-    for (const t of this.txnCache ?? []) for (const p of t.postings) used.add(p.account);
+    const used = new Set(decodeLines(await this.cmd(['accounts', '--used'])));
     return typed.map(({ name, type }) => ({
       name,
       type,
       declared: declared.has(name),
-      used: this.txnCache ? [...used].some((u) => u === name || u.startsWith(name + ':')) : true,
+      used: used.has(name) || [...used].some((u) => u.startsWith(name + ':')),
     }));
   }
 
   async commodities(): Promise<CommodityInfo[]> {
     const symbols = decodeLines(await this.cmd(['commodities']));
-    const styles = new Map<string, AmountStyle>();
-    for (const t of this.txnCache ?? []) for (const p of t.postings) for (const a of p.amount) if (!styles.has(a.commodity)) styles.set(a.commodity, a.style);
+    const styles = this.styles;
+    if (symbols.some((c) => !styles.has(c))) {
+      // One small report carries a styled amount for every commodity in use.
+      const bal = decodeBalance(await this.json<HBalanceReport>(['balance', '--flat', '--empty', '-N']));
+      for (const row of bal.rows) for (const a of row.amount) if (!styles.has(a.commodity)) styles.set(a.commodity, a.style);
+    }
     const declared = new Set<string>();
     for (const text of Object.values(this.snapshot?.files ?? {}))
       for (const m of text.matchAll(/^commodity[ \t]+(?:"([^"]+)"|([^\s\d.,\-+]+)(?=[\s\d.,\-+]|$)|[\d.,\-+ ]*([^\s\d.,\-+]+))/gm)) declared.add(m[1] ?? m[2] ?? m[3]!);

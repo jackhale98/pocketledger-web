@@ -71,3 +71,19 @@ export function decodeRoi(stdout: string): RoiRow[] {
   }
   return rows;
 }
+
+/** `hledger stats` summary: span, transaction / account / commodity counts. */
+export function decodeStats(stdout: string): { transactions: number; accounts: number; commodities: number; firstDate: string | null; lastDate: string | null } {
+  const field = (name: string) => new RegExp(`^${name}\\s*:\\s*(.*)$`, 'm').exec(stdout)?.[1]?.trim() ?? '';
+  const span = /(\d{4}-\d\d-\d\d) to (\d{4}-\d\d-\d\d)/.exec(field('Txns span'));
+  const int = (name: string) => Number(/^\d+/.exec(field(name))?.[0] ?? 0);
+  // "to" is exclusive in hledger's span; the last transaction date is reported separately.
+  const last = /^\d{4}-\d\d-\d\d/.exec(field('Last txn'))?.[0] ?? null;
+  return {
+    transactions: int('Txns'),
+    accounts: int('Accounts'),
+    commodities: int('Commodities'),
+    firstDate: span?.[1] ?? null,
+    lastDate: last,
+  };
+}

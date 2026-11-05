@@ -9,6 +9,7 @@ import type { VaultRecord, VaultStore } from '$lib/contracts/storage';
 import { createEngineClient, EngineCallError, type EngineClient } from '$lib/engine/client';
 import { makeSnapshot, guessRootFile, isEngineFile } from '$lib/vault';
 import { demoFiles } from '$lib/vault/demo';
+import { windowStart, WINDOW_TXNS } from '$lib/vault/window';
 import { writer } from '$lib/journal/writer';
 import { vaultStore } from '$lib/store';
 import { saveLocal } from '$lib/sync';
@@ -37,12 +38,6 @@ function forecastWindow(today = new Date()) {
 }
 const LAST_VAULT = 'pl:lastVault';
 
-function payeeOf(t: Txn): string {
-  const tag = t.tags.find(([k]) => k === 'payee');
-  if (tag) return tag[1];
-  const i = t.description.indexOf('|');
-  return (i >= 0 ? t.description.slice(0, i) : t.description).trim();
-}
 
 export class AppState {
   engine: EngineClient | null = null;
@@ -61,7 +56,11 @@ export class AppState {
   loadErrors = $state.raw<EngineError[]>([]);
   stats = $state.raw<JournalStats | null>(null);
 
+  /** A recent window of transactions (all of them when txnsFrom is null). */
   txns = $state.raw<Txn[]>([]);
+  /** First date in the window (inclusive); null = the whole journal is loaded. */
+  txnsFrom = $state<string | null>(null);
+  loadingOlder = $state(false);
   accounts = $state.raw<AccountInfo[]>([]);
   commodities = $state.raw<CommodityInfo[]>([]);
   payees = $state.raw<string[]>([]);
@@ -239,21 +238,58 @@ export class AppState {
     const engine = this.engine!;
     this.loadErrors = [];
     this.stats = stats;
-    this.txns = await engine.transactions();
+    // Only a recent window of transactions is fetched (printing every transaction
+    // as JSON dominates load time on large journals); older ones load on demand.
+    const begin = windowStart(stats, WINDOW_TXNS);
+    this.txns = await engine.transactions(begin ? { period: { begin } } : {});
+    this.txnsFrom = begin;
     this.revision = revision;
-    const seen = new Set<string>();
-    const payees: string[] = [];
-    for (let i = this.txns.length - 1; i >= 0; i--) {
-      const p = payeeOf(this.txns[i]!);
-      if (p && !seen.has(p)) {
-        seen.add(p);
-        payees.push(p);
-      }
-    }
-    this.payees = payees;
-    this.accounts = await engine.accounts();
-    this.commodities = await engine.commodities();
+    // Lists for autocomplete and pickers rarely change on a save: refresh them
+    // without holding up the screen (on large journals each is a few hundred ms).
+    void this.refreshLists(revision);
   }
+
+  private async refreshLists(revision: string) {
+    const engine = this.engine!;
+    try {
+      const [payees, accounts, commodities] = [await engine.payees(), await engine.accounts(), await engine.commodities()];
+      if (revision !== this.revision) return;
+      this.payees = payees;
+      this.accounts = accounts;
+      this.commodities = commodities;
+    } catch {
+      /* the next reload refreshes them */
+    }
+  }
+
+  /** Extend the transaction window further back. Returns false when everything is loaded. */
+  async loadOlder(): Promise<boolean> {
+    if (!this.txnsFrom || !this.engine || !this.stats || this.loadingOlder) return false;
+    this.loadingOlder = true;
+    try {
+      const end = this.txnsFrom;
+      const begin = windowStart({ ...this.stats, lastDate: end }, WINDOW_TXNS * 2);
+      const revision = this.revision;
+      const older = await this.engine.transactions({ period: { ...(begin ? { begin } : {}), end } });
+      if (revision !== this.revision) return true; // the journal changed meanwhile
+      this.txns = [...older, ...this.txns];
+      this.txnsFrom = begin;
+      return !!begin;
+    } finally {
+      this.loadingOlder = false;
+    }
+  }
+
+  /** A transaction by hledger index, from the window or (if older) from hledger. */
+  async findTxn(index: number, date: string): Promise<Txn | undefined> {
+    const hit = this.txns.find((t) => t.index === index);
+    if (hit || !this.engine) return hit;
+    const next = new Date(date + 'T00:00:00Z');
+    next.setUTCDate(next.getUTCDate() + 1);
+    const day = await this.engine.transactions({ period: { begin: date, end: next.toISOString().slice(0, 10) } });
+    return day.find((t) => t.index === index);
+  }
+
 
   // ------------------------------------------------------------------ saving
 
@@ -361,6 +397,35 @@ export class AppState {
     const text = this.files[txn.source.file];
     if (text == null) return null;
     return text.split(/\r?\n/).slice(txn.source.startLine - 1, txn.source.endLine).join('\n');
+  }
+
+  /**
+   * Re-find a transaction in the current files by the exact text it had when it
+   * was opened. Returns it (with its span updated if lines moved) or null if that
+   * text is gone or ambiguous — e.g. a sync or another tab changed it — so an edit
+   * never lands on the wrong transaction.
+   */
+  relocate(txn: Txn, text: string | null): Txn | null {
+    if (!txn.source || text == null) return null;
+    const file = this.files[txn.source.file];
+    if (file == null) return null;
+    const lines = file.split(/\r?\n/);
+    const want = text.split('\n');
+    const at = (i: number) => want.every((w, k) => lines[i + k] === w);
+    if (at(txn.source.startLine - 1)) return txn;
+    const hits: number[] = [];
+    for (let i = 0; i + want.length <= lines.length && hits.length < 2; i++) if (at(i)) hits.push(i);
+    if (hits.length !== 1) return null;
+    return { ...txn, source: { ...txn.source, startLine: hits[0]! + 1, endLine: hits[0]! + want.length } };
+  }
+
+  /** The journal file new entries dated `date` should go to: a file named for the year, else the vault's setting. */
+  targetFor(date: string): string {
+    const year = date.slice(0, 4);
+    const journals = this.engineFiles().filter((f) => /\.(journal|hledger|ledger|j)$/i.test(f));
+    const byYear = journals.filter((f) => new RegExp(`(^|/)${year}[^/]*\\.[a-z]+$`, 'i').test(f) || new RegExp(`(^|/)${year}/`).test(f));
+    if (byYear.length === 1) return byYear[0]!;
+    return this.addTargetFile();
   }
 
   engineFiles(): string[] {

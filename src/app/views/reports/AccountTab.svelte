@@ -105,8 +105,8 @@
   const chgVals = $derived(change ? change.totals.amounts.slice(skip).map((m) => numberIn(m, commodity)) : []);
   const tone = (s: string) => (s.trim().startsWith('-') ? 'neg' : 'pos');
 
-  function open(r: RegisterRow) {
-    const t = app.txns.find((x) => x.index === r.txnIndex);
+  async function open(r: RegisterRow) {
+    const t = await app.findTxn(r.txnIndex, r.date);
     if (t) editor.show(t);
   }
 </script>

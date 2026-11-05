@@ -1,6 +1,7 @@
 <script lang="ts">
   import { draftFromTxn } from '$lib/journal/writer';
-  import { app } from '../state/app.svelte';
+  import { app, SaveError } from '../state/app.svelte';
+  import { toasts } from '../state/toast.svelte';
   import { editor } from '../state/editor.svelte';
   import { href } from '../state/router.svelte';
   import { todayISO } from '../lib/amounts';
@@ -12,14 +13,34 @@
   const src = $derived(t ? app.sourceText(t) : null);
   let showSource = $state(false);
 
+  const STALE = 'This transaction changed elsewhere (a sync or another tab). Close it and open it again.';
   function duplicate() {
     if (!t || !app.snapshot) return;
-    const d = draftFromTxn(t, app.snapshot);
-    editor.openNew({ ...d, date: todayISO(), status: '' });
+    const cur = app.relocate(t, editor.detailText);
+    if (!cur) return void toasts.show(STALE, { tone: 'error' });
+    const d = draftFromTxn(cur, app.snapshot);
+    // A copy keeps accounts, amounts, notes and status, but not balance assertions
+    // (they would be wrong on the new date) or the secondary date.
+    const { date2: _d2, ...rest } = d;
+    editor.openNew({ ...rest, date: todayISO(), postings: d.postings.map(({ assertion: _a, ...p }) => p) });
+  }
+  let confirming = $state(false);
+  async function remove() {
+    if (!t) return;
+    const cur = app.relocate(t, editor.detailText);
+    if (!cur) return void toasts.show(STALE, { tone: 'error' });
+    try {
+      await app.deleteTxn(cur);
+      editor.detailOpen = false;
+    } catch (e) {
+      toasts.show(e instanceof SaveError ? e.errors[0]?.message ?? 'Delete failed' : (e as Error).message, { tone: 'error' });
+    } finally {
+      confirming = false;
+    }
   }
 </script>
 
-<Sheet bind:open={editor.detailOpen} title="Transaction" onclose={() => (showSource = false)}>
+<Sheet bind:open={editor.detailOpen} title="Transaction" onclose={() => { showSource = false; confirming = false; }}>
   {#if t}
     <div class="head">
       <div>
@@ -59,9 +80,17 @@
   {/if}
   {#snippet footer()}
     {#if t?.source}
+      {#if confirming}
+        <span class="ask">Delete this transaction?</span>
+        <button class="btn" type="button" onclick={() => (confirming = false)}>Keep</button>
+        <button class="btn danger" type="button" onclick={remove}>Delete</button>
+      {:else}
+      <button class="icon-btn del" type="button" onclick={() => (confirming = true)} disabled={app.readOnly} aria-label="Delete transaction"><Icon name="trash" size={18} /></button>
+      <span style="flex:1"></span>
       <button class="btn" type="button" onclick={duplicate} disabled={app.readOnly}><Icon name="copy" size={18} /> Duplicate</button>
       <button class="btn" type="button" onclick={() => t && editor.openEdit(t, true)} disabled={app.readOnly}><Icon name="code" size={18} /> Edit text</button>
       <button class="btn primary" type="button" onclick={() => t && editor.openEdit(t)} disabled={app.readOnly}><Icon name="edit" size={18} /> Edit</button>
+      {/if}
     {/if}
   {/snippet}
 </Sheet>
@@ -80,5 +109,7 @@
   .comment { font-size: 0.9rem; margin-bottom: 10px; }
   .loc { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-3); flex-wrap: wrap; }
   .link { background: none; border: 0; color: var(--accent); font-weight: 600; font-size: 0.85rem; }
+  .ask { margin-right: auto; font-weight: 600; align-self: center; }
+  .del { color: var(--neg); }
   .src { margin-top: 8px; padding: 12px; background: var(--surface-2); border-radius: var(--radius-s); font-family: var(--mono); font-size: 0.8rem; overflow-x: auto; }
 </style>

@@ -20,12 +20,17 @@
     account: string;
     amount: string;
     commodity: string;
+    /** Posting note (comment); shown when non-empty or opened. */
+    note: string;
+    showNote: boolean;
     /** Untouched parts of an existing posting, kept verbatim. */
-    keep: Omit<PostingDraft, 'account' | 'amount' | 'commodity'>;
+    keep: Omit<PostingDraft, 'account' | 'amount' | 'commodity' | 'comment'>;
   }
 
+  const STALE = 'This transaction was changed elsewhere (a sync or another tab) since you opened it. Close it and open it again.';
   let key = 0;
   let date = $state(todayISO());
+  let date2 = $state('');
   let status = $state<Status>('');
   let description = $state('');
   let code = $state('');
@@ -39,6 +44,9 @@
   let saving = $state(false);
   let targetFile = $state('');
   let autofilled = $state(false);
+  let targetTouched = $state(false);
+  /** The transaction being edited, re-found in the current files (null if it changed elsewhere). */
+  let current = $state.raw<import('$lib/contracts/engine').Txn | null>(null);
 
   const isEdit = $derived(!!editor.txn);
   const accountNames = $derived(app.accounts.map((a) => a.name));
@@ -52,7 +60,7 @@
   const styleOf = (c: string) => styles.get(c) ?? styleFor(c);
   const journalFiles = $derived(app.engineFiles().filter((f) => /\.(journal|hledger|ledger|j)$/i.test(f)));
 
-  const blank = (account = '', amount = '', commodity = ''): Row => ({ key: key++, account, amount, commodity, keep: {} });
+  const blank = (account = '', amount = '', commodity = ''): Row => ({ key: key++, account, amount, commodity, note: '', showNote: false, keep: {} });
 
   // Initialise each time the sheet opens.
   $effect(() => {
@@ -66,31 +74,38 @@
     errors = [];
     rawErrors = [];
     autofilled = false;
-    targetFile = app.addTargetFile();
+    targetTouched = false;
     raw = editor.rawMode;
     let d: TxnDraft | null = editor.initial;
+    current = null;
     if (editor.txn && app.snapshot) {
-      try {
-        d = draftFromTxn(editor.txn, app.snapshot);
-      } catch (e) {
-        errors = [{ kind: 'internal', message: (e as Error).message }];
-      }
-      rawText = app.sourceText(editor.txn) ?? '';
+      current = app.relocate(editor.txn, editor.txnText);
+      if (!current) errors = [{ kind: 'internal', message: STALE }];
+      else
+        try {
+          d = draftFromTxn(current, app.snapshot);
+        } catch (e) {
+          errors = [{ kind: 'internal', message: (e as Error).message }];
+        }
+      rawText = current ? (app.sourceText(current) ?? '') : '';
     }
+    targetFile = app.targetFor(d?.date ?? todayISO());
     if (d) {
       date = d.date;
+      date2 = d.date2 ?? '';
       status = d.status ?? '';
       description = d.description;
       code = d.code ?? '';
       comment = d.comment ?? '';
       rows = d.postings.map((p) => {
-        const { account, amount, commodity, ...keep } = p;
-        return { key: key++, account, amount: amount ?? '', commodity: commodity ?? '', keep };
+        const { account, amount, commodity, comment: note, ...keep } = p;
+        return { key: key++, account, amount: amount ?? '', commodity: commodity ?? '', note: note ?? '', showNote: !!note, keep };
       });
-      showMore = !!(code || comment);
+      showMore = !!(code || comment || date2);
       if (!editor.txn) rawText = writer.formatTxn(d, writer.inferStyle(app.files[targetFile] ?? ''));
     } else {
       date = todayISO();
+      date2 = '';
       status = '';
       description = '';
       code = '';
@@ -102,10 +117,22 @@
     while (rows.length < 2) rows.push(blank());
   }
 
+  // New entries go to the file for their year (split-by-year journals) unless the user picked one.
+  $effect(() => {
+    const d = date;
+    if (editor.open && !isEdit && !targetTouched) targetFile = untrack(() => app.targetFor(d));
+  });
+
   // Autofill postings from the most recent transaction with the same payee (like `hledger add`).
-  function autofill(payee: string) {
+  async function autofill(payee: string) {
     if (isEdit || autofilled) return;
-    const prev = [...app.txns].reverse().find((t) => t.description === payee || t.description.split('|')[0]!.trim() === payee);
+    const same = (t: import('$lib/contracts/engine').Txn) => t.description === payee || t.description.split('|')[0]!.trim() === payee;
+    let prev = [...app.txns].reverse().find(same);
+    if (!prev && app.engine) {
+      // Older than the loaded window: ask hledger for this payee's transactions.
+      const re = payee.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      prev = (await app.engine.transactions({ query: [`desc:^${re}`] }).catch(() => [])).filter(same).pop();
+    }
     if (!prev) return;
     if (rows.some((r) => r.account || r.amount)) return;
     description = prev.description;
@@ -143,15 +170,20 @@
   });
   const amountErrors = $derived(parsed.map((p) => p.error));
   const filledRows = $derived(rows.filter((r) => r.account.trim()));
-  const canSave = $derived(
-    !saving &&
-      !!date &&
-      description.trim() !== '' &&
-      filledRows.length >= 1 &&
-      (filledRows.length >= 2 || filledRows.some((r) => r.keep.type === 'virtual')) &&
-      !amountErrors.some(Boolean) &&
-      balance.status !== 'unbalanced',
-  );
+  /** Why Save is disabled, in words (null = can save). */
+  const blocked = $derived.by(() => {
+    if (!date) return 'Choose a date';
+    if (!description.trim()) return 'Add a description';
+    const orphan = rows.findIndex((r) => !r.account.trim() && r.amount.trim());
+    if (orphan >= 0) return `Posting ${orphan + 1} has an amount but no account`;
+    const bad = amountErrors.findIndex(Boolean);
+    if (bad >= 0) return `Amount ${bad + 1} isn't a number`;
+    if (filledRows.length < 2 && !filledRows.some((r) => r.keep.type === 'virtual')) return 'Enter at least two accounts';
+    if (balance.status === 'unbalanced') return balance.blanks > 1 ? 'Leave at most one amount blank' : `Doesn't balance: off by ${unbalancedBy}`;
+    if (isEdit && !current) return 'Reopen this transaction: it changed elsewhere';
+    return null;
+  });
+  const canSave = $derived(!saving && blocked === null);
 
   function toDraft(): TxnDraft {
     const postings: PostingDraft[] = [];
@@ -159,6 +191,7 @@
       if (!r.account.trim()) return;
       const p = parsed[i]!;
       const pd: PostingDraft = { ...r.keep, account: r.account.trim() };
+      if (r.note.trim()) pd.comment = r.note.trim();
       if (p.quantity != null) {
         pd.amount = toJournalNumber(p.quantity, styleOf(p.commodity));
         pd.commodity = p.commodity;
@@ -166,9 +199,10 @@
       postings.push(pd);
     });
     const d: TxnDraft = { date, description: description.trim(), postings };
+    if (date2) d.date2 = date2;
     if (status) d.status = status;
     if (code.trim()) d.code = code.trim();
-    if (comment.trim()) d.comment = comment.trim();
+    if (comment.trim()) d.comment = comment.replace(/\s+$/, '');
     return d;
   }
 
@@ -176,10 +210,13 @@
     saving = true;
     errors = [];
     try {
+      // Re-find the transaction now: a sync or another tab may have moved or changed it.
+      const t = editor.txn ? app.relocate(editor.txn, editor.txnText) : null;
+      if (editor.txn && !t) throw new SaveError([{ kind: 'internal', message: STALE }]);
       if (raw) {
-        if (editor.txn) await app.replaceTxnText(editor.txn, rawText);
+        if (t) await app.replaceTxnText(t, rawText);
         else await app.applyPatches([{ op: 'append', file: targetFile, text: rawText.replace(/\s+$/, '') }], 'add transaction');
-      } else if (editor.txn) await app.editTxn(editor.txn, toDraft());
+      } else if (t) await app.editTxn(t, toDraft());
       else await app.addTxn(toDraft(), targetFile);
       toasts.show(isEdit ? 'Saved' : 'Transaction added', { tone: 'ok' });
       editor.open = false;
@@ -194,7 +231,9 @@
     if (!editor.txn) return;
     saving = true;
     try {
-      await app.deleteTxn(editor.txn);
+      const t = app.relocate(editor.txn, editor.txnText);
+      if (!t) throw new SaveError([{ kind: 'internal', message: STALE }]);
+      await app.deleteTxn(t);
       editor.open = false;
     } catch (e) {
       errors = e instanceof SaveError ? e.errors : [{ kind: 'internal', message: (e as Error).message }];
@@ -245,7 +284,7 @@
     {#if !isEdit && journalFiles.length > 1}
       <label class="target">
         <span class="sr-only">Save to file</span>
-        <select class="input" bind:value={targetFile}>
+        <select class="input" bind:value={targetFile} onchange={() => (targetTouched = true)}>
           {#each journalFiles as f (f)}<option value={f}>{f}</option>{/each}
         </select>
       </label>
@@ -255,7 +294,7 @@
   {#if raw}
     <label class="field">
       <span>Journal text</span>
-      <textarea class="input" rows="10" bind:value={rawText} spellcheck="false" aria-describedby="raw-status"></textarea>
+      <textarea class="input" rows="10" bind:value={rawText} spellcheck="false" autocapitalize="off" aria-describedby="raw-status"></textarea>
     </label>
     <p id="raw-status" class="raw-status" role="status">
       {#if rawErrors.length}<span class="neg"><Icon name="alert" size={16} /> hledger: {rawErrors[0]?.message.split('\n').slice(-3).join(' ')}</span>
@@ -282,11 +321,12 @@
 
       {#if showMore}
         <div class="row2">
-          <label class="field"><span>Code</span><input class="input" bind:value={code} placeholder="e.g. 1042" /></label>
-          <label class="field"><span>Comment</span><input class="input" bind:value={comment} placeholder="tag: value, note" /></label>
+          <label class="field"><span>Code</span><input class="input" bind:value={code} placeholder="e.g. 1042" autocapitalize="off" /></label>
+          <label class="field"><span>Secondary date</span><input class="input" type="date" bind:value={date2} /></label>
         </div>
+        <label class="field"><span>Comment</span><textarea class="input note" rows={Math.max(1, comment.split('\n').length)} bind:value={comment} placeholder="tag: value, note"></textarea></label>
       {:else}
-        <button type="button" class="link" onclick={() => (showMore = true)}>+ Code or comment</button>
+        <button type="button" class="link" onclick={() => (showMore = true)}>+ Code, secondary date or comment</button>
       {/if}
 
       <div class="postings" role="group" aria-label="Postings">
@@ -305,14 +345,19 @@
                 placeholder={!r.amount && inferred && balance.blanks === 1 ? inferred : defaultCommodity === '$' ? '0.00' : `0.00 ${defaultCommodity}`}
               />
               <label class="sr-only" for="comm-{r.key}">Commodity {i + 1}</label>
-              <input id="comm-{r.key}" class="input comm" list="pl-commodities" bind:value={r.commodity} placeholder={defaultCommodity} />
+              <input id="comm-{r.key}" class="input comm" list="pl-commodities" bind:value={r.commodity} placeholder={defaultCommodity} autocapitalize="off" autocorrect="off" spellcheck="false" />
             </div>
-            {#if r.keep.cost || r.keep.assertion || r.keep.comment}
+            {#if r.keep.cost || r.keep.assertion}
               <p class="kept">
                 {#if r.keep.cost}<span class="badge">{r.keep.cost}</span>{/if}
                 {#if r.keep.assertion}<span class="badge">{r.keep.assertion}</span>{/if}
-                {#if r.keep.comment}<span class="muted">; {r.keep.comment}</span>{/if}
               </p>
+            {/if}
+            {#if r.showNote}
+              <label class="sr-only" for="note-{r.key}">Note for posting {i + 1}</label>
+              <input id="note-{r.key}" class="input pnote" bind:value={r.note} placeholder="Posting note (tags allowed)" />
+            {:else}
+              <button type="button" class="link small" onclick={() => (r.showNote = true)}>+ Note</button>
             {/if}
             {#if rows.length > 2}
               <button type="button" class="icon-btn rm" onclick={() => (rows = rows.filter((x) => x.key !== r.key))} aria-label="Remove posting {i + 1}"><Icon name="minus" size={18} /></button>
@@ -345,6 +390,7 @@
       <button class="btn danger" type="button" onclick={remove} disabled={saving}><Icon name="trash" size={18} /> Delete</button>
       <span style="flex:1"></span>
     {/if}
+    {#if !raw && blocked && (description || rows.some((r) => r.account || r.amount))}<span class="why" role="status">{blocked}</span>{/if}
     <button class="btn" type="button" onclick={() => (editor.open = false)}>Cancel</button>
     <button class="btn primary" type="button" onclick={save} disabled={raw ? saving || rawErrors.length > 0 : !canSave}>
       {saving ? 'Saving…' : isEdit ? 'Save' : 'Add'}
@@ -364,6 +410,10 @@
   .seg button { border: 0; background: var(--surface); font-size: 0.82rem; font-weight: 560; padding: 0 4px; }
   .seg button + button { border-left: 1px solid var(--border); }
   .seg button[aria-checked='true'] { background: var(--accent-soft); color: var(--accent-strong); }
+  .note { min-height: 0; font-family: var(--font); font-size: 1rem; line-height: 1.4; resize: vertical; }
+  .pnote { grid-column: 1 / -1; min-height: 36px; padding: 6px 10px; font-size: 0.88rem; }
+  .link.small { grid-column: 1 / -1; font-size: 0.8rem; padding: 0; margin-top: -4px; }
+  .why { margin-right: auto; font-size: 0.82rem; color: var(--warn); align-self: center; }
   .link { justify-self: start; background: none; border: 0; color: var(--accent); font-weight: 600; font-size: 0.88rem; padding: 2px 0; }
   .postings { display: grid; gap: 10px; }
   .phead { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.8rem; font-weight: 600; color: var(--text-2); }
