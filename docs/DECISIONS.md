@@ -208,3 +208,23 @@ longer block Files/Settings, folder vaults re-read the disk on open and focus,
 Accounts search / expand / collapse / show zero / remembered state, hide
 amounts, demo banner, browser back closes sheets, quarter and custom ranges,
 recurring rules reachable from More and Budget.
+
+## D-022 Auto postings and hledger.conf
+
+hledger applies auto-posting rules (`= QUERY`) only with `--auto`, and the app
+runs hledger with `--no-conf` (D-010), so rules were silently ignored. Now each
+`VaultSnapshot` carries `flags`, added to every invocation: `--auto` whenever a
+journal has an auto-posting rule, plus an allow-list of general (input) options
+from the vault's `hledger.conf` / `.hledger.conf` — `--auto`,
+`--infer-market-prices`, `--infer-costs`, `--infer-equity`, `-I`, `--strict`,
+`--alias`. Report-shaping options in the conf (`-V`, `--tree`, command sections)
+are ignored so decoders keep working; the app's own controls cover those.
+`hledger.conf` now syncs and imports with the vault (it is not passed to hledger).
+
+## D-023 Reporting additions
+
+CSV export uses hledger's own `-O csv` for the exact options on screen
+(statements, Table tab, budget, registers). Payee and tag breakdowns use
+`--pivot` (Table tab "Rows", Overview "Merchant"). Market prices can be added
+from Reports → Prices as `P` directives, written to the file that already holds
+the most prices (else the root journal) and validated like any save.
