@@ -21,6 +21,7 @@
   import SettingsView from './views/SettingsView.svelte';
   import ImportView from './views/ImportView.svelte';
   import ReconcileView from './views/ReconcileView.svelte';
+  import CloseYearView from './views/CloseYearView.svelte';
   import ConsoleView from './views/ConsoleView.svelte';
   import CheckView from './views/CheckView.svelte';
   import FilesView from './views/FilesView.svelte';
@@ -38,6 +39,7 @@
     { view: 'recurring', label: 'Recurring rules', icon: 'repeat' },
     { view: 'import', label: 'Import CSV', icon: 'upload' },
     { view: 'reconcile', label: 'Reconcile', icon: 'check-circle' },
+    { view: 'close', label: 'Close year', icon: 'calendar' },
     { view: 'files', label: 'Files', icon: 'file' },
     { view: 'check', label: 'Check', icon: 'shield' },
     { view: 'console', label: 'Console', icon: 'terminal' },
@@ -164,6 +166,7 @@
         {:else if view === 'budget'}<BudgetView />
         {:else if view === 'import'}<ImportView />
         {:else if view === 'reconcile'}<ReconcileView />
+        {:else if view === 'close'}<CloseYearView />
         {:else if view === 'console'}<ConsoleView />
         {:else if view === 'check'}<CheckView />
         {:else if view === 'files'}<FilesView />

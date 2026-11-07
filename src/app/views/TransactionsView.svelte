@@ -9,6 +9,9 @@
   import { PRESETS, presetRange, humanDate, type PresetId } from '../lib/periods';
   import Money from '../components/Money.svelte';
   import Icon from '../components/Icon.svelte';
+  import BulkBar from '../components/BulkBar.svelte';
+  import { TxnSelection, pickable } from '../state/selection.svelte';
+  import { untrack } from 'svelte';
 
   const KEY = 'pl:txn-filters';
   let saved: { preset?: PresetId; status?: string; newest?: boolean } = {};
@@ -142,6 +145,22 @@
     limit = 150;
   });
 
+  // Select mode (bulk actions). Picks follow their transactions across saves and
+  // stay while filters change; a different vault starts afresh.
+  const sel = new TxnSelection();
+  $effect(() => {
+    void app.vault?.id;
+    untrack(() => {
+      sel.clear();
+      sel.active = false;
+    });
+  });
+  $effect(() => {
+    void app.revision;
+    untrack(() => sel.remap());
+  });
+  const pickedShown = $derived(sel.active && sel.size ? filtered.filter((t) => sel.has(t)).length : 0);
+
   const split = (d: string) => {
     const i = d.indexOf('|');
     return i < 0 ? { payee: d, note: '' } : { payee: d.slice(0, i).trim(), note: d.slice(i + 1).trim() };
@@ -175,6 +194,7 @@
     <button class="chip" type="button" onclick={() => (newest = !newest)} aria-label="Sort: {newest ? 'newest first' : 'oldest first'}">
       <Icon name={newest ? 'arrow-down' : 'arrow-up'} size={14} />{newest ? 'Newest' : 'Oldest'}
     </button>
+    <button class="chip" type="button" aria-pressed={sel.active} disabled={app.readOnly} onclick={() => { sel.active = !sel.active; if (!sel.active) sel.clear(); }} title="Select transactions to change or delete together"><Icon name="check" size={14} />Select</button>
   </div>
 </div>
 
@@ -205,18 +225,17 @@
             {@const h = headline(t)}
             {@const d = split(t.description)}
             <li>
+              {#if sel.active}
+                <label class="row pick" class:on={sel.has(t)}>
+                  <input type="checkbox" checked={sel.has(t)} disabled={!pickable(t)} onchange={() => sel.toggle(t)} aria-label="Select {d.payee || 'transaction'}, {t.date}" />
+                  {@render rowBody(t, h, d)}
+                </label>
+              {:else}
               <button type="button" class="row" onclick={() => editor.show(t)}>
                 <span class="avatar" aria-hidden="true">{(d.payee || '?').slice(0, 1).toUpperCase()}</span>
-                <span class="main">
-                  <span class="title">
-                    {d.payee || '(no description)'}
-                    {#if t.status === '!'}<span class="badge warn">Pending</span>{:else if t.status === ''}<span class="dotu" title="Unmarked" aria-label="Unmarked"></span>{/if}
-                    {#if t.generated}<span class="badge">Forecast</span>{/if}
-                  </span>
-                  <span class="sub">{d.note ? `${d.note} · ` : ''}{t.postings.map((p) => shortAcct(p.account)).join(' → ')}</span>
-                </span>
-                <span class="amt"><Money value={h.amount} color={h.tone} /></span>
+                {@render rowBody(t, h, d)}
               </button>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -228,6 +247,19 @@
     {/if}
   </div>
 {/if}
+{#if sel.active && app.revision}<BulkBar {sel} shown={filtered} hidden={sel.size - pickedShown} />{/if}
+
+{#snippet rowBody(t: Txn, h: { amount: MixedAmount; tone: boolean }, d: { payee: string; note: string })}
+  <span class="main">
+    <span class="title">
+      {d.payee || '(no description)'}
+      {#if t.status === '!'}<span class="badge warn">Pending</span>{:else if t.status === ''}<span class="dotu" title="Unmarked" aria-label="Unmarked"></span>{/if}
+      {#if t.generated}<span class="badge">Forecast</span>{/if}
+    </span>
+    <span class="sub">{d.note ? `${d.note} · ` : ''}{t.postings.map((p) => shortAcct(p.account)).join(' → ')}</span>
+  </span>
+  <span class="amt"><Money value={h.amount} color={h.tone} /></span>
+{/snippet}
 
 <style>
   .toolbar { display: grid; gap: 10px; margin-bottom: 12px; }
@@ -257,6 +289,9 @@
     padding: 12px 16px; border: 0; background: none; text-align: left; min-height: 60px;
   }
   .row:hover { background: var(--surface-2); }
+  .pick { cursor: pointer; }
+  .pick.on { background: var(--accent-soft); }
+  .pick input { width: 22px; height: 22px; margin: 0 7px; accent-color: var(--accent); }
   .avatar {
     width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 0.9rem;
     background: var(--accent-soft); color: var(--accent-strong);

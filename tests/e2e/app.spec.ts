@@ -324,3 +324,128 @@ test('valuation control switches Accounts between units, cost, market value and 
   await mode.selectOption({ label: 'As written' });
   await expect(row).toContainText('VTI');
 });
+
+async function fitsPhone(page: Page, what: string) {
+  const { sw, vw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth }));
+  expect(sw, `${what} overflows horizontally`).toBeLessThanOrEqual(vw);
+}
+
+test('close year: migrate balances with hledger close, warn on a second close, undo', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openDemo(page);
+  await page.goto('app/#/close');
+  const preview = page.getByRole('region', { name: 'Preview' });
+  await expect(preview.locator('pre.src').filter({ hasText: /^\d{4}-12-31 closing balances/ })).toBeVisible();
+  await expect(preview.locator('pre.src').filter({ hasText: /^\d{4}-01-01 opening balances/ })).toBeVisible();
+  // The demo keeps one folder per year, included by a glob: a new file and a mirrored include.
+  await expect(preview).toContainText('Create 2027/2027.journal');
+  await expect(preview.locator('pre.src').filter({ hasText: 'include 2027/*.journal' })).toBeVisible();
+  await expect(page.getByText(/hledger command: hledger close --migrate -e \d{4}-01-01/)).toBeVisible();
+  await fitsPhone(page, 'close view');
+  expect((await axe(page).analyze()).violations).toEqual([]);
+
+  await page.getByRole('button', { name: /^Close \d{4}$/ }).click();
+  await expect(page.getByText(/Closed \d{4} · created 2027\/2027\.journal/)).toBeVisible();
+  // Closing again is detected and needs confirmation.
+  await expect(page.getByText(/looks closed already/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Close \d{4}$/ })).toBeDisabled();
+  await expect(preview).toContainText('Nothing to close');
+  expect((await axe(page).analyze()).violations).toEqual([]);
+
+  await page.goto('app/#/transactions');
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('desc:closing');
+  await expect(page.locator('main li button.row', { hasText: 'closing balances' })).toHaveCount(1);
+  await page.getByRole('button', { name: /^Undo close/ }).click();
+  await expect(page.locator('main li button.row', { hasText: 'closing balances' })).toHaveCount(0);
+
+  // Retain earnings: one entry, to equity:retained earnings.
+  await page.goto('app/#/close');
+  await page.getByRole('radio', { name: /Retain earnings/ }).check();
+  await expect(preview.locator('pre.src').filter({ hasText: 'equity:retained earnings' })).toBeVisible();
+  await expect(preview.locator('pre.src')).toHaveCount(1);
+  await expect(page.getByText(/looks closed already/)).toHaveCount(0);
+});
+
+test('rename an account and its subaccounts everywhere, with a preview', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openDemo(page);
+  await page.goto('app/#/accounts');
+  await page.getByRole('button', { name: 'Rename expenses:coffee' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Rename account' });
+  const name = dialog.getByRole('textbox', { name: 'New name' });
+  // Renaming onto an existing account asks to merge.
+  await name.fill('expenses:dining');
+  await expect(dialog.getByText(/already exists/)).toBeVisible();
+  const go = dialog.getByRole('button', { name: /^Rename \(/ });
+  await expect(go).toBeDisabled();
+  await dialog.getByRole('checkbox', { name: 'Merge into the existing account' }).check();
+  await expect(go).toBeEnabled();
+  await name.fill('expenses:food:coffee');
+  await expect(dialog.getByText(/already exists/)).toHaveCount(0);
+  await expect(dialog.getByRole('list', { name: 'Lines that will change' })).toContainText('account expenses:food:coffee');
+  await expect(dialog.getByText(/\d+ lines in \d+ files will change/)).toBeVisible();
+  await fitsPhone(page, 'rename sheet');
+  expect((await axe(page).include('dialog').analyze()).violations).toEqual([]);
+  await go.click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText(/Renamed expenses:coffee to expenses:food:coffee/)).toBeVisible();
+  await page.getByRole('button', { name: 'Expand all' }).click();
+  await expect(page.getByRole('link', { name: 'coffee' })).toBeVisible();
+  await page.goto('app/#/transactions');
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('Bean There');
+  await expect(page.locator('main li button.row').first()).toContainText('food:coffee');
+});
+
+test('bulk recategorise, mark and delete selected transactions as one undoable change', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await openDemo(page);
+  await page.getByRole('button', { name: 'Select', exact: true }).click();
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('Bean There');
+  const rows = page.locator('main li label.row');
+  await expect(rows.first()).toContainText('Bean There');
+  await expect(rows.filter({ hasNotText: 'Bean There' })).toHaveCount(0);
+  const count = await rows.count();
+  expect(count).toBeGreaterThan(2);
+  const bar = page.getByRole('region', { name: 'Selected transactions' });
+  await bar.getByRole('button', { name: `Select all ${count}` }).click();
+  await expect(bar).toContainText(`${count} selected`);
+  await fitsPhone(page, 'select mode');
+  expect((await axe(page).analyze()).violations).toEqual([]);
+
+  // Change account: coffee → dining in all of them.
+  await bar.getByRole('button', { name: 'Account' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Change account' });
+  await sheet.getByRole('combobox', { name: 'Replace' }).selectOption('expenses:coffee');
+  await sheet.getByRole('combobox', { name: 'With' }).fill('expenses:dining');
+  expect((await axe(page).include('dialog').analyze()).violations).toEqual([]);
+  await sheet.getByRole('button', { name: `Change in ${count} transactions` }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByText(`Changed expenses:coffee to expenses:dining in ${count} transactions`)).toBeVisible();
+  await expect(rows.first()).toContainText('dining');
+  await expect(rows.filter({ hasText: 'expenses:coffee' })).toHaveCount(0);
+
+  // Mark two pending; the selection survives a filter change.
+  await rows.nth(0).getByRole('checkbox').check();
+  await rows.nth(1).getByRole('checkbox').check();
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('');
+  await expect(bar).toContainText('2 selected');
+  await page.getByRole('searchbox', { name: 'Search transactions' }).fill('Bean There');
+  await bar.getByRole('button', { name: 'Status' }).click();
+  await page.getByRole('dialog', { name: 'Set status' }).getByRole('button', { name: /Pending/ }).click();
+  await expect(page.getByText('Marked 2 transactions pending')).toBeVisible();
+  await expect(rows.filter({ hasText: 'Pending' })).toHaveCount(2);
+
+  // Delete, confirm, then undo in one step.
+  await rows.nth(0).getByRole('checkbox').check();
+  await rows.nth(1).getByRole('checkbox').check();
+  await rows.nth(2).getByRole('checkbox').check();
+  await bar.getByRole('button', { name: 'Delete' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Delete transactions' });
+  await confirm.getByRole('button', { name: 'Delete 3 transactions' }).click();
+  await expect(page.getByText('Deleted 3 transactions')).toBeVisible();
+  await expect(rows).toHaveCount(count - 3);
+  await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
+  await expect(rows).toHaveCount(count);
+  await bar.getByRole('button', { name: 'Done' }).click();
+  await expect(page.locator('main li button.row').first()).toBeVisible();
+});

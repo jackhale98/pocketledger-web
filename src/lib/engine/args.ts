@@ -51,8 +51,11 @@ export function splitQuery(q: string): string[] {
   return out;
 }
 
-/** Commands that may write files or reach the network are never run from the console. */
-const WRITE_COMMANDS = new Set(['add', 'import', 'rewrite', 'close', 'web', 'ui', 'setup', 'iadd', 'run', 'repl']);
+/**
+ * Commands that may write files or reach the network are never run from the console.
+ * `close` is allowed: it only prints entries (the app writes them, see CloseYearView).
+ */
+const WRITE_COMMANDS = new Set(['add', 'import', 'rewrite', 'web', 'ui', 'setup', 'iadd', 'run', 'repl']);
 export function isReadOnlyCommand(args: string[]): boolean {
   const cmd = args.find((a) => !a.startsWith('-'));
   if (!cmd) return true;

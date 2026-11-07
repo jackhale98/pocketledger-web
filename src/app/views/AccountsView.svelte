@@ -8,6 +8,7 @@
   import Icon from '../components/Icon.svelte';
   import ValueIn from '../components/ValueIn.svelte';
   import ErrorPanel from '../components/ErrorPanel.svelte';
+  import RenameAccount from '../components/RenameAccount.svelte';
   import { accountsView } from '../state/accounts.svelte';
 
   const FILTERS: { id: string; label: string; types: AccountType[] }[] = [
@@ -71,6 +72,12 @@
     else next.add(a);
     v.collapsed = next;
   }
+  let renaming = $state('');
+  let renameOpen = $state(false);
+  function rename(a: string) {
+    renaming = a;
+    renameOpen = true;
+  }
   const TYPE_LABEL: Record<string, string> = { A: 'Asset', C: 'Cash', L: 'Liability', E: 'Equity', R: 'Revenue', X: 'Expense', V: 'Conversion' };
 </script>
 
@@ -114,14 +121,19 @@
           {#if r.indent === 0 && typeOf.get(r.account)}<span class="badge">{TYPE_LABEL[typeOf.get(r.account)!]}</span>{/if}
         </span>
         <span role="gridcell" class="val" class:top={r.indent === 0}><Money value={r.amount} /></span>
+        <span role="gridcell" class="act">
+          <button class="icon-btn ren" type="button" onclick={() => rename(r.account)} disabled={app.readOnly} aria-label="Rename {r.account}" title="Rename"><Icon name="edit" size={16} /></button>
+        </span>
       </div>
     {/each}
     <div class="node total" role="row">
       <span role="gridcell" class="name"><span class="twist"></span>Total</span>
       <span role="gridcell" class="val"><Money value={report.total} /></span>
+      <span role="gridcell" class="act"></span>
     </div>
   </div>
 {/if}
+{#if renaming}<RenameAccount bind:open={renameOpen} account={renaming} />{/if}
 
 <style>
   .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; }
@@ -141,7 +153,9 @@
   .name .badge { margin-left: 6px; }
   .twist { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border: 0; background: none; color: var(--text-3); border-radius: 6px; }
   button.twist:hover { background: var(--surface-2); }
-  .val { font-weight: 520; }
+  .val { font-weight: 520; margin-left: auto; }
+  .act { flex: none; width: 32px; margin-right: -8px; }
+  .ren { width: 32px; height: 32px; color: var(--text-3); }
   .val.top { font-weight: 700; }
   .total { background: var(--surface-2); font-weight: 700; }
   .sk { padding: 18px 16px; border-bottom: 1px solid var(--border); }

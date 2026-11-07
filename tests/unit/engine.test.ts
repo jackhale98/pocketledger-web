@@ -43,6 +43,11 @@ describe('args', () => {
     expect(isReadOnlyCommand(['import', 'x.csv'])).toBe(false);
     expect(isReadOnlyCommand(['print', '-o', 'x.journal'])).toBe(false);
   });
+  it('allows close, which only prints entries, but not with an output file', () => {
+    expect(isReadOnlyCommand(['close', '--migrate', '-e', '2027-01-01'])).toBe(true);
+    expect(isReadOnlyCommand(['close', '--retain', '-e', '2027-01-01'])).toBe(true);
+    expect(isReadOnlyCommand(['close', '--migrate', '-o', 'x.journal'])).toBe(false);
+  });
 });
 
 describe.skipIf(!hasWasm)('HledgerEngine', () => {

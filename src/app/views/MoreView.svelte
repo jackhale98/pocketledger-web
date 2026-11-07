@@ -8,6 +8,7 @@
     recurring: 'Budgets and forecasts from ~ rules',
     import: 'Bring in bank CSVs with hledger rules',
     reconcile: 'Match an account against a statement',
+    close: 'Year-end closing entries with hledger close',
     files: 'View and edit journal files as text',
     check: 'Run hledger’s strict checks',
     console: 'Run read-only hledger commands',
