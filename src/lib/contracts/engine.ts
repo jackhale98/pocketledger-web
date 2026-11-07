@@ -15,6 +15,12 @@ export interface VaultSnapshot {
   files: Record<string, string>;
   /** Content hash; the engine caches by this. Use `snapshotRevision()` from src/lib/vault. */
   revision: string;
+  /**
+   * Input options added to every hledger invocation for this vault, e.g. ["--auto"]
+   * when the journal has auto-posting rules, plus allow-listed general options from
+   * the vault's hledger.conf. Built by `journalFlags()` in src/lib/vault/flags.ts.
+   */
+  flags?: string[];
 }
 
 export interface EngineError {
@@ -38,6 +44,14 @@ export interface QueryOpts {
   period?: Period;
   /** Commodity for -X (convert to). */
   valueIn?: string;
+  /**
+   * How amounts are valued: 'cost' (-B, at cost basis), 'value' (market value: -X valueIn
+   * or -V), 'gain' (--gain: unrealized gain, market value minus cost). Default: as written,
+   * or market value in `valueIn` when that is set.
+   */
+  valuation?: 'cost' | 'value' | 'gain';
+  /** Report by a tag (or "payee", "desc", "code") instead of account names: --pivot. */
+  pivot?: string;
   depth?: number;
   /** Status filters; when several are set they are OR'd, as in hledger (-C/-P/-U). */
   cleared?: boolean;

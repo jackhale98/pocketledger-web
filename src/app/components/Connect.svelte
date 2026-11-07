@@ -7,7 +7,7 @@
   import { DropboxProvider, DropboxSession } from '$lib/dropbox';
   import { GitHubRestProvider, githubSecretKey } from '$lib/git';
   import { VaultSyncEngine, localTexts } from '$lib/sync';
-  import { guessRootFile, isEngineFile } from '$lib/vault';
+  import { guessRootFile, isEngineFile, isVaultFile } from '$lib/vault';
   import { app } from '../state/app.svelte';
   import { router } from '../state/router.svelte';
   import { toasts } from '../state/toast.svelte';
@@ -136,7 +136,7 @@
         const files = await ws.readFiles();
         await store().putFiles(
           Object.entries(files)
-            .filter(([p]) => isEngineFile(p))
+            .filter(([p]) => isVaultFile(p))
             .map(([path, text]) => ({ vaultId: rec.id, path, text, base: text, baseRev: null, dirty: false, modifiedAt: Date.now() })),
         );
       }

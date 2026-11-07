@@ -1,4 +1,5 @@
 import type { VaultSnapshot } from '../contracts/engine';
+import { isConfFile, journalFlags } from './flags';
 
 /** Files the engine needs. hledger resolves `include` itself. */
 export const ENGINE_EXTENSIONS = ['.journal', '.hledger', '.ledger', '.j', '.rules', '.csv', '.prices', '.timeclock', '.timedot'];
@@ -6,6 +7,9 @@ export const JOURNAL_EXTENSIONS = ['.journal', '.hledger', '.ledger', '.j', '.pr
 
 export const isEngineFile = (path: string) =>
   ENGINE_EXTENSIONS.some((e) => path.toLowerCase().endsWith(e)) && !path.split('/').some((p) => p.startsWith('.'));
+/** Files a vault keeps: what hledger reads plus hledger.conf (read by the app, not passed to hledger). */
+export const isVaultFile = (path: string) => isEngineFile(path) || isConfFile(path);
+
 export const isJournalFile = (path: string) => JOURNAL_EXTENSIONS.some((e) => path.toLowerCase().endsWith(e));
 
 /** Fast, stable content hash (FNV-1a 64-bit over paths and contents). */
@@ -30,7 +34,8 @@ export function snapshotRevision(files: Record<string, string>, rootFile = ''): 
 export function makeSnapshot(files: Record<string, string>, rootFile: string): VaultSnapshot {
   const engineFiles: Record<string, string> = {};
   for (const [p, t] of Object.entries(files)) if (isEngineFile(p)) engineFiles[p] = t;
-  return { rootFile, files: engineFiles, revision: snapshotRevision(engineFiles, rootFile) };
+  const flags = journalFlags(files);
+  return { rootFile, files: engineFiles, revision: snapshotRevision(engineFiles, rootFile + '\u0000' + flags.join(' ')), ...(flags.length ? { flags } : {}) };
 }
 
 /** Pick the most likely root journal among a set of files. */

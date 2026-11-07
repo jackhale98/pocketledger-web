@@ -72,7 +72,7 @@ export class HledgerEngine implements Engine {
   private rootArgs(snapshot = this.snapshot): string[] {
     if (!snapshot) throw new EngineFailure([{ kind: 'internal', message: 'No journal loaded' }]);
     // --no-conf: a hledger.conf could change report shapes the decoders rely on.
-    return ['-f', `${VAULT_ROOT}/${snapshot.rootFile}`, '--no-conf'];
+    return ['-f', `${VAULT_ROOT}/${snapshot.rootFile}`, '--no-conf', ...(snapshot.flags ?? [])];
   }
 
   private async exec(args: string[], useCache = true): Promise<RawResult> {

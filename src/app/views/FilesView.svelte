@@ -1,7 +1,7 @@
 <script lang="ts">
   // Vault files: browse, view with line numbers, edit as text (validated by hledger before saving).
   import type { EngineError } from '$lib/contracts/engine';
-  import { makeSnapshot, isEngineFile } from '$lib/vault';
+  import { makeSnapshot, isVaultFile } from '$lib/vault';
   import { app, SaveError } from '../state/app.svelte';
   import { href, router } from '../state/router.svelte';
   import { toasts } from '../state/toast.svelte';
@@ -67,7 +67,7 @@
   async function create() {
     const name = newName.trim().replace(/^\/+/, '');
     if (!name || app.files[name] != null) return;
-    if (!isEngineFile(name)) {
+    if (!isVaultFile(name)) {
       toasts.show('Use a journal, rules or CSV extension (.journal, .rules, .csv…)', { tone: 'error' });
       return;
     }
@@ -97,7 +97,7 @@
     const added: string[] = [];
     for (const f of list) {
       const path = (dir ? dir + '/' : '') + f.name;
-      if (!isEngineFile(path)) continue;
+      if (!isVaultFile(path)) continue;
       next[path] = await f.text();
       added.push(path);
     }

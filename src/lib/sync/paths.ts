@@ -11,7 +11,7 @@ const EXT = new RegExp(`(?:${SYNC_EXTENSIONS.map((e) => e.replace('.', '\\.')).j
  * `.private.journal` are allowed: only folders are excluded.
  */
 export function syncable(path: string): boolean {
-  if (!EXT.test(path)) return false;
+  if (!EXT.test(path) && path !== 'hledger.conf' && path !== '.hledger.conf') return false;
   const parts = path.split('/');
   return !parts.slice(0, -1).some((part) => part.startsWith('.'));
 }

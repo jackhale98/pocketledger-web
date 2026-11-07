@@ -9,7 +9,7 @@ import { GitHubRestProvider, githubSecretKey } from '$lib/git';
 import type { IsoGitWorkspace } from '$lib/git/workspace';
 import { TabCoordinator } from '$lib/pwa/tabs';
 import { dropboxAppKey } from '$lib/config';
-import { makeSnapshot, isEngineFile } from '$lib/vault';
+import { makeSnapshot, isVaultFile } from '$lib/vault';
 import { persistStorage } from '$lib/pwa/register';
 import { app } from './app.svelte';
 import { toasts } from './toast.svelte';
@@ -243,7 +243,7 @@ async function rescanFolder(vault: VaultRecord) {
       if (name.startsWith('.')) continue;
       const path = prefix + name;
       if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path + '/');
-      else if (isEngineFile(path)) disk.set(path, await (await (entry as FileSystemFileHandle).getFile()).text());
+      else if (isVaultFile(path)) disk.set(path, await (await (entry as FileSystemFileHandle).getFile()).text());
     }
   }
   try {

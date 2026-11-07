@@ -5,7 +5,7 @@
   import { toasts } from '../state/toast.svelte';
   import { syncState } from '../state/sync.svelte';
   import { persistStorage, isIOS, isStandalone } from '$lib/pwa/register';
-  import { isEngineFile } from '$lib/vault';
+  import { isVaultFile } from '$lib/vault';
   import { newJournalTemplate } from '../lib/template';
   import Icon from '../components/Icon.svelte';
   import Sheet from '../components/Sheet.svelte';
@@ -45,7 +45,7 @@
     for (const f of list) {
       const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
       const path = rel.includes('/') && input.hasAttribute('webkitdirectory') ? rel.split('/').slice(1).join('/') : rel;
-      if (isEngineFile(path)) files[path] = await f.text();
+      if (isVaultFile(path)) files[path] = await f.text();
     }
     input.value = '';
     if (!Object.keys(files).length) {
@@ -73,7 +73,7 @@
           if (name.startsWith('.')) continue;
           const path = prefix + name;
           if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path + '/');
-          else if (isEngineFile(path)) files[path] = await (await (entry as FileSystemFileHandle).getFile()).text();
+          else if (isVaultFile(path)) files[path] = await (await (entry as FileSystemFileHandle).getFile()).text();
         }
       }
       await walk(dir, '');

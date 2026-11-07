@@ -2,7 +2,7 @@
   // When hledger can't find an included file, offer to upload it into the vault
   // at the path the include directive expects.
   import type { EngineError } from '$lib/contracts/engine';
-  import { isEngineFile } from '$lib/vault';
+  import { isVaultFile } from '$lib/vault';
   import { app } from '../state/app.svelte';
   import { toasts } from '../state/toast.svelte';
   import Icon from './Icon.svelte';
@@ -30,7 +30,7 @@
     const next = { ...app.files };
     for (const f of list) {
       const path = glob || list.length > 1 ? dir + f.name : pattern;
-      if (!isEngineFile(path)) continue;
+      if (!isVaultFile(path)) continue;
       next[path] = await f.text();
     }
     try {

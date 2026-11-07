@@ -9,7 +9,11 @@ export function queryArgs(opts: QueryOpts = {}): string[] {
   if (p?.begin) a.push('-b', p.begin);
   if (p?.end) a.push('-e', p.end);
   if (p?.interval) a.push(INTERVAL_FLAG[p.interval]);
-  if (opts.valueIn) a.push('-X', opts.valueIn);
+  if (opts.valuation === 'cost') a.push('-B');
+  else if (opts.valuation === 'gain') a.push('--gain', ...(opts.valueIn ? ['-X', opts.valueIn] : []));
+  else if (opts.valueIn) a.push('-X', opts.valueIn);
+  else if (opts.valuation === 'value') a.push('-V');
+  if (opts.pivot) a.push('--pivot', opts.pivot);
   if (opts.depth != null) a.push('--depth', String(opts.depth));
   if (opts.cleared) a.push('-C');
   if (opts.pending) a.push('-P');
