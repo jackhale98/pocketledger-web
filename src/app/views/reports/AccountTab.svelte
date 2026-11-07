@@ -6,6 +6,7 @@
   import { accountQuery } from '$lib/engine/hledger-engine';
   import { decodeRoi, type RoiRow } from '$lib/engine/decode/text';
   import { app } from '../../state/app.svelte';
+  import { settings } from '../../state/settings.svelte';
   import { editor } from '../../state/editor.svelte';
   import { href } from '../../state/router.svelte';
   import { reportFilters as f } from '../../state/reports.svelte';
@@ -152,6 +153,7 @@
 
   <section class="card card-pad" aria-labelledby="bal-h">
     <h2 id="bal-h">Balance over time</h2>
+    {#if settings.v.valuation === 'cost' || settings.v.valuation === 'gain'}<p class="muted small note">Charts always show market value in {commodity}; the Amounts setting applies to the postings below.</p>{/if}
     {#if balance}
       <LineChart title="Balance of {account}" labels={balCols.map((c) => columnLabel(c.begin, c.end))} values={balVals} format={fmt} prefix={commodity.length === 1 ? commodity : ''} />
     {:else}<div class="skeleton" style="height:200px"></div>{/if}
@@ -199,6 +201,7 @@
   details summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--accent); padding: 4px 0; }
   details .field { margin-top: 8px; }
   .small { font-size: 0.8rem; }
+  .note { margin: -4px 0 8px; }
   code { font-family: var(--mono); font-size: 0.85em; }
   .list { overflow: clip; }
   .list h2 { margin: 0; }

@@ -2,7 +2,7 @@
   import type { Interval, StatementReport } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
+  import { valuationOpts } from '../state/settings.svelte';
   import { href, router } from '../state/router.svelte';
   import { PRESETS, presetRange, columnLabel, type PresetId } from '../lib/periods';
   import Money from '../components/Money.svelte';
@@ -30,7 +30,7 @@
     const opts = {
       period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) },
       depth,
-      ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}),
+      ...valuationOpts(),
     };
     const k = kind;
     if (!rev || !app.engine) return;

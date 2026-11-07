@@ -1,12 +1,13 @@
 import type { MixedAmount } from '$lib/contracts/amount';
 import type { AmountStyle } from '$lib/contracts/amount';
 import { app } from '../state/app.svelte';
-import { settings } from '../state/settings.svelte';
+import { marketCurrency } from '../state/settings.svelte';
 import { formatAmount, styleFor } from '$lib/engine/decimal';
 
-/** The commodity charts are drawn in: the "Value in" choice, else the most used one. */
+/** The commodity charts are drawn in: the market value currency when one is chosen, else the most used one. */
 export function chartCommodity(): string {
-  if (settings.v.valueIn) return settings.v.valueIn;
+  const mc = marketCurrency();
+  if (mc) return mc;
   const count = new Map<string, number>();
   for (const t of app.txns) for (const p of t.postings) for (const a of p.amount) count.set(a.commodity, (count.get(a.commodity) ?? 0) + 1);
   return [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';

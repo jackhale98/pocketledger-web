@@ -1,11 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  // Reports hub: Overview, Table, Account, Forecast, Prices, Stats — one filter bar for all.
+  // Reports hub: Overview, Table, Account, Investments, Forecast, Prices, Stats — one filter bar for all.
   import { reportFilters as f, type ReportTab } from '../state/reports.svelte';
   import FilterBar from './reports/FilterBar.svelte';
   import OverviewTab from './reports/OverviewTab.svelte';
   import TableTab from './reports/TableTab.svelte';
   import AccountTab from './reports/AccountTab.svelte';
+  import InvestmentsTab from './reports/InvestmentsTab.svelte';
   import PricesTab from './reports/PricesTab.svelte';
   import StatsTab from './reports/StatsTab.svelte';
   import ForecastTab from './reports/ForecastTab.svelte';
@@ -14,6 +15,7 @@
     ['overview', 'Overview'],
     ['table', 'Table'],
     ['account', 'Account'],
+    ['investments', 'Investments'],
     ['forecast', 'Forecast'],
     ['prices', 'Prices'],
     ['stats', 'Stats'],
@@ -42,6 +44,7 @@
 <div id="rp" role="tabpanel" aria-labelledby="rt-{f.tab}" class="panel">
   {#if f.tab === 'table'}<TableTab />
   {:else if f.tab === 'account'}<AccountTab />
+  {:else if f.tab === 'investments'}<InvestmentsTab />
   {:else if f.tab === 'forecast'}<ForecastTab query={f.words} />
   {:else if f.tab === 'prices'}<PricesTab />
   {:else if f.tab === 'stats'}<StatsTab />
