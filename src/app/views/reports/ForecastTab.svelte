@@ -29,7 +29,7 @@
   } from '$lib/journal/periodic';
   import { makeSnapshot } from '$lib/vault';
   import { app, SaveError } from '../../state/app.svelte';
-  import { settings } from '../../state/settings.svelte';
+  import { marketCurrency } from '../../state/settings.svelte';
   import { editor } from '../../state/editor.svelte';
   import { toasts } from '../../state/toast.svelte';
   import { href } from '../../state/router.svelte';
@@ -86,7 +86,7 @@
     const engine = app.engine;
     const acct = account;
     const words = [...query];
-    const valueIn = settings.v.valueIn;
+    const valueIn = marketCurrency();
     const forecast = forecastPeriod;
     const end = horizon;
     if (!rev || !engine || !acct) return;
@@ -121,7 +121,7 @@
   // ─── Projection ───
   /** The chart's commodity: "Value in" if set, else the one the account mostly holds. */
   const commodity = $derived.by(() => {
-    if (settings.v.valueIn) return settings.v.valueIn;
+    if (marketCurrency()) return marketCurrency();
     const last = report?.totals.amounts.at(-1) ?? [];
     const top = [...sumMixed(last)].sort((a, b) => Math.abs(Number(b.quantity)) - Math.abs(Number(a.quantity)))[0];
     return top?.commodity ?? (app.revision ? chartCommodity() : '');

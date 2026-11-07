@@ -228,3 +228,26 @@ CSV export uses hledger's own `-O csv` for the exact options on screen
 `--pivot` (Table tab "Rows", Overview "Merchant"). Market prices can be added
 from Reports → Prices as `P` directives, written to the file that already holds
 the most prices (else the root journal) and validated like any save.
+
+## D-024 Valuation modes and the Investments tab
+
+The "Value in" picker became one valuation control (`settings.valuation`:
+as written / cost / market value / unrealized gain, plus `settings.valueIn` as
+the currency for the last two). `valuationOpts()` turns it into
+`QueryOpts.valuation` (`-B`, `-X C` or `-V`, `--gain [-X C]`); Accounts,
+Register, Statements, the Table tab and Account-tab postings use it. Budgets and
+the forecast projection treat "gain" as market value. A saved "Value in" from
+before means market value. Charts that need one currency (Overview, Account,
+Investments, Forecast) always draw market value in the chart currency and say so
+when cost or gain is selected.
+
+Investments (Reports tab) shows positions in asset accounts (`type:A`) in a
+commodity other than the chart currency — the Account tab's rule. Each number
+is hledger's: units from `bal --flat -H`, then per held commodity C a
+`cur:^C$` query with `-B`, `-X <currency>` and `--gain -X <currency>`;
+`src/app/lib/holdings.ts` only joins rows and does exact decimal sums and the
+gain %. Cost is hledger's `-B` (recorded costs, so a sale reduces it at its sale
+price rather than at an average or lot cost). Values use `P` directives only
+(no `--infer-market-prices`, which QueryOpts cannot express), as `-X` does;
+latest prices come from `prices -e <end>`. Returns reuse D-019's `roi` call per
+account; value vs cost is `bal -M --historical` with `-X C` and `-B`.

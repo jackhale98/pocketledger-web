@@ -115,7 +115,7 @@ test('every Reports tab fits a phone screen and is accessible', async ({ page })
   await page.setViewportSize({ width: 375, height: 812 });
   await openDemo(page);
   await page.goto('app/#/reports');
-  for (const tab of ['Overview', 'Table', 'Account', 'Forecast', 'Prices', 'Stats']) {
+  for (const tab of ['Overview', 'Table', 'Account', 'Investments', 'Forecast', 'Prices', 'Stats']) {
     await page.getByRole('tab', { name: tab }).click();
     await page.waitForTimeout(800);
     const { sw, vw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: document.documentElement.clientWidth }));
@@ -264,4 +264,63 @@ test('auto-posting rules are applied to reports', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await page.goto('app/#/accounts');
   await expect(page.getByRole('link', { name: 'tracking' })).toBeVisible();
+});
+
+test('Investments tab values the demo VTI holding with cost, value and gain', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/reports');
+  await page.getByRole('tab', { name: 'Investments' }).click();
+  const holdings = page.locator('section[aria-labelledby="hold-h"]');
+  await expect(holdings.getByRole('heading', { name: 'Holdings' })).toBeVisible();
+  const vti = holdings.locator('tbody tr, li').filter({ hasText: 'VTI' }).filter({ hasText: 'assets:brokerage' });
+  await expect(vti).toHaveCount(1);
+  // Units, then cost, market value and gain: dollar amounts from hledger (-B, -X $, --gain -X $).
+  await expect(vti).toContainText(/\d+\.000 VTI/);
+  await expect.poll(async () => ((await vti.innerText()).match(/\$[\d,]+\.\d\d/g) ?? []).length).toBeGreaterThanOrEqual(4);
+  await expect(page.getByRole('heading', { name: 'Returns' })).toBeVisible();
+  await expect(page.locator('section[aria-labelledby="ret-h"]')).toContainText('%');
+  await expect(page.getByRole('heading', { name: 'Allocation' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Market value and cost of all holdings/ })).toBeVisible();
+  expect((await axe(page).analyze()).violations).toEqual([]);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(holdings.locator('li').filter({ hasText: 'VTI' }).first()).toBeVisible();
+  await page.waitForTimeout(500);
+  const { sw, vw, wide } = await page.evaluate(() => {
+    const vw = document.documentElement.clientWidth;
+    // The tab strip and period chips scroll sideways by design; the tab's own content must fit.
+    const wide = [...document.querySelectorAll('#rp *')].filter((e) => e.getBoundingClientRect().right > vw + 1).map((e) => `${e.tagName}.${e.className}`);
+    return { sw: document.documentElement.scrollWidth, vw, wide };
+  });
+  expect(sw, 'Investments overflows horizontally').toBeLessThanOrEqual(vw);
+  expect(wide, 'elements wider than 375px').toEqual([]);
+  expect((await axe(page).analyze()).violations, 'Investments axe at 375px').toEqual([]);
+});
+
+test('valuation control switches Accounts between units, cost, market value and gain', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/accounts');
+  const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: 'brokerage', exact: true }) });
+  await expect(row).toContainText('VTI');
+  const mode = page.getByRole('combobox', { name: 'Amounts' });
+  await mode.selectOption({ label: 'Cost' });
+  await expect(row).not.toContainText('VTI');
+  await expect(row).toContainText(/\$[\d,]+\.\d\d/);
+  const cost = (await row.locator('.val').innerText()).trim();
+  await mode.selectOption({ label: 'Market value' });
+  await page.getByRole('combobox', { name: 'in currency' }).selectOption('$');
+  await expect(row.locator('.val')).not.toHaveText(cost);
+  await expect(row).toContainText(/\$[\d,]+\.\d\d/);
+  await mode.selectOption({ label: 'Unrealized gain' });
+  await expect(row.locator('.val')).toHaveText(/^\$[\d,]+\.\d\d$/);
+  // VTI's price rose after almost every demo purchase, so the unrealized gain is positive and below the cost.
+  const gain = Number((await row.locator('.val').innerText()).replace(/[^\d.]/g, ''));
+  expect(gain).toBeGreaterThan(0);
+  expect(gain).toBeLessThan(Number(cost.replace(/[^\d.]/g, '')));
+  expect((await axe(page).analyze()).violations).toEqual([]);
+  // The choice is a saved setting.
+  await page.reload();
+  await expect(page.getByRole('combobox', { name: 'Amounts' })).toHaveValue('gain');
+  await mode.selectOption({ label: 'As written' });
+  await expect(row).toContainText('VTI');
 });

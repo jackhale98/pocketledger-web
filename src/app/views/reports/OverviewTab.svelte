@@ -3,6 +3,7 @@
   import { EngineCallError } from '$lib/engine/client';
   import { accountQuery } from '$lib/engine/args';
   import { app } from '../../state/app.svelte';
+  import { settings } from '../../state/settings.svelte';
   import { router, href } from '../../state/router.svelte';
   import { reportFilters as f } from '../../state/reports.svelte';
   import { columnLabel } from '../../lib/periods';
@@ -125,6 +126,10 @@
   <button class="card" type="button" onclick={() => { f.tab = 'stats'; f.save(); }}><Icon name="info" size={18} /> Statistics</button>
 </nav>
 
+{#if settings.v.valuation === 'cost' || settings.v.valuation === 'gain'}
+  <p class="muted note">These charts always show market value in {commodity}; the {settings.v.valuation === 'cost' ? 'Cost' : 'Unrealized gain'} setting applies to tables.</p>
+{/if}
+
 {#if hidden.length}
   <p class="warn" role="status">
     <Icon name="info" size={16} /> Charts are valued in {commodity}. No price is known for {hidden.join(', ')}, so
@@ -230,6 +235,7 @@
     font-size: 0.85rem; font-weight: 600; color: var(--text); text-decoration: none; cursor: pointer;
   }
   .links .card:hover { background: var(--surface-2); }
+  .note { font-size: 0.8rem; margin-bottom: 10px; }
   .warn { display: flex; gap: 8px; align-items: flex-start; background: var(--warn-soft); color: var(--text); padding: 10px 12px; border-radius: var(--radius-s); font-size: 0.85rem; margin-bottom: 12px; }
   code { font-family: var(--mono); }
   .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }

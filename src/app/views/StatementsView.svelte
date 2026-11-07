@@ -2,7 +2,7 @@
   import type { Interval, StatementReport } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
+  import { valuationOpts } from '../state/settings.svelte';
   import { href, router } from '../state/router.svelte';
   import { PRESETS, presetRange, columnLabel, type PresetId } from '../lib/periods';
   import Money from '../components/Money.svelte';
@@ -32,7 +32,7 @@
     const opts = {
       period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) },
       depth,
-      ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}),
+      ...valuationOpts(),
     };
     const k = kind;
     if (!rev || !app.engine) return;
@@ -73,7 +73,7 @@
     <select class="input" bind:value={depth}>{#each [1, 2, 3, 4, 9] as d (d)}<option value={d}>{d === 9 ? 'All' : d}</option>{/each}</select>
   </label>
   <ValueIn />
-  <button class="btn small ghost" type="button" onclick={() => exportCsv([kind, '--flat'], { period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) }, depth, ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}) }, { bs: 'balance-sheet', is: 'income-statement', cf: 'cash-flow' }[kind])}><Icon name="download" size={16} /> CSV</button>
+  <button class="btn small ghost" type="button" onclick={() => exportCsv([kind, '--flat'], { period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) }, depth, ...valuationOpts() }, { bs: 'balance-sheet', is: 'income-statement', cf: 'cash-flow' }[kind])}><Icon name="download" size={16} /> CSV</button>
 </div>
 
 {#if error}

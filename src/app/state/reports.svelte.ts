@@ -2,10 +2,10 @@
 import type { Interval, QueryOpts } from '$lib/contracts/engine';
 import { splitQuery } from '$lib/engine/args';
 import { presetRange, type PresetId } from '../lib/periods';
-import { settings } from './settings.svelte';
+import { valuationOpts } from './settings.svelte';
 import { app } from './app.svelte';
 
-export type ReportTab = 'overview' | 'table' | 'account' | 'forecast' | 'prices' | 'stats';
+export type ReportTab = 'overview' | 'table' | 'account' | 'investments' | 'forecast' | 'prices' | 'stats';
 const KEY = 'pl:report-filters';
 
 interface Saved {
@@ -74,15 +74,15 @@ class ReportFilters {
     return days <= 45 ? 'daily' : days <= 120 ? 'weekly' : 'monthly';
   }
 
-  /** Common QueryOpts for a report: period, filter query, forecast, valuation. */
+  /** Common QueryOpts for a report: period, filter query, forecast, valuation (an explicit `valueIn` means market value in it). */
   opts(extra: QueryOpts = {}, withInterval = false): QueryOpts {
-    const valueIn = extra.valueIn ?? settings.v.valueIn;
+    const val = extra.valueIn || extra.valuation ? {} : valuationOpts();
     return {
       ...extra,
       period: { ...this.range, ...(withInterval ? { interval: this.chartInterval } : {}), ...extra.period },
       query: [...(extra.query ?? []), ...this.words],
       ...(this.forecast ? { forecast: true } : {}),
-      ...(valueIn ? { valueIn } : {}),
+      ...val,
     };
   }
 }

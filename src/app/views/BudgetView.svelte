@@ -4,7 +4,7 @@
   import { EngineCallError } from '$lib/engine/client';
   import { dec, formatAmount } from '$lib/engine/decimal';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
+  import { settings, valuationOpts } from '../state/settings.svelte';
   import { href, router } from '../state/router.svelte';
   import { reportFilters } from '../state/reports.svelte';
   import { styleOf } from '../lib/primary';
@@ -38,7 +38,7 @@
     if (!rev || !app.engine) return;
     report = null;
     app.engine
-      .budget({ period: { begin, end, interval: 'monthly' }, ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}) })
+      .budget({ period: { begin, end, interval: 'monthly' }, ...valuationOpts(settings.v, { gain: false }) })
       .then((r) => {
         report = r;
         error = null;
@@ -118,7 +118,7 @@
   <h2 aria-live="polite">{month.label}</h2>
   <button class="icon-btn" type="button" onclick={() => offset++} aria-label="Next month"><Icon name="chevron-right" /></button>
   {#if offset !== 0}<button class="chip" type="button" onclick={() => (offset = 0)}>Today</button>{/if}
-  <button class="btn small ghost csv" type="button" onclick={() => exportCsv(['balance', '--budget', '--flat'], { period: { begin: month.begin, end: month.end, interval: 'monthly' }, ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}) }, `budget-${month.begin.slice(0, 7)}`)}><Icon name="download" size={16} /> CSV</button>
+  <button class="btn small ghost csv" type="button" onclick={() => exportCsv(['balance', '--budget', '--flat'], { period: { begin: month.begin, end: month.end, interval: 'monthly' }, ...valuationOpts(settings.v, { gain: false }) }, `budget-${month.begin.slice(0, 7)}`)}><Icon name="download" size={16} /> CSV</button>
 </div>
 
 {#if error}

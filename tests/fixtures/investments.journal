@@ -1,0 +1,42 @@
+; Investments fixture: two funds in two accounts, a gift at zero cost, a sale,
+; a loss, and prices with more decimals than the display style.
+commodity $1,000.00
+commodity 1.000 VTI
+commodity 1.0000 BND
+
+account assets:brokerage   ; type: A
+account assets:ira         ; type: A
+account assets:checking    ; type: C
+account equity             ; type: E
+account income:gifts       ; type: R
+account income:gains       ; type: R
+
+2026-01-05 opening
+    assets:checking   $10,000.00
+    equity
+
+2026-01-10 buy VTI
+    assets:brokerage   10 VTI @ $200.00
+    assets:checking
+
+2026-01-10 buy BND
+    assets:brokerage   20 BND @ $75.125
+    assets:checking
+
+2026-02-10 buy VTI in the IRA
+    assets:ira   5 VTI @@ $1,050.00
+    assets:checking
+
+2026-03-01 gifted bonds
+    assets:ira   2 BND @ $0
+    income:gifts
+
+2026-03-15 sell some VTI
+    assets:brokerage   -4 VTI @ $210.00
+    assets:checking
+
+P 2026-01-31 VTI $205.00
+P 2026-02-28 VTI $215.50
+P 2026-03-31 VTI $190.333
+P 2026-01-31 BND $74.00
+P 2026-03-31 BND $73.10

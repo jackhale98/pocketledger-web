@@ -2,7 +2,7 @@
   import type { RegisterRow } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
+  import { valuationOpts } from '../state/settings.svelte';
   import { editor } from '../state/editor.svelte';
   import { href, router } from '../state/router.svelte';
   import Money from '../components/Money.svelte';
@@ -27,13 +27,13 @@
 
   $effect(() => {
     const rev = app.revision;
-    const valueIn = settings.v.valueIn;
+    const val = valuationOpts();
     const acct = account;
     const begin = all ? null : since;
     if (!rev || !app.engine) return;
     rows = null;
     app.engine
-      .register(acct, { ...(valueIn ? { valueIn } : {}), ...(begin ? { period: { begin }, accumulation: 'historical' as const } : {}) })
+      .register(acct, { ...val, ...(begin ? { period: { begin }, accumulation: 'historical' as const } : {}) })
       .then((r) => {
         rows = r;
         error = null;
@@ -66,7 +66,7 @@
   <div class="actions">
     <ValueIn />
     <a class="btn small" href="{href('reconcile')}?account={encodeURIComponent(account)}"><Icon name="check-circle" size={16} /> Reconcile</a>
-    <button class="btn small ghost" type="button" onclick={() => exportCsv(['register', accountQuery(account)], settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}, `register-${account.replace(/[^\w]+/g, '-')}`)}><Icon name="download" size={16} /> CSV</button>
+    <button class="btn small ghost" type="button" onclick={() => exportCsv(['register', accountQuery(account)], valuationOpts(), `register-${account.replace(/[^\w]+/g, '-')}`)}><Icon name="download" size={16} /> CSV</button>
   </div>
 </div>
 

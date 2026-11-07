@@ -2,7 +2,7 @@
   import type { AccountType, BalanceReport } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
   import { app } from '../state/app.svelte';
-  import { settings } from '../state/settings.svelte';
+  import { valuationOpts } from '../state/settings.svelte';
   import { href } from '../state/router.svelte';
   import Money from '../components/Money.svelte';
   import Icon from '../components/Icon.svelte';
@@ -25,14 +25,14 @@
 
   $effect(() => {
     const rev = app.revision;
-    const valueIn = settings.v.valueIn;
+    const val = valuationOpts();
     const f = FILTERS.find((x) => x.id === v.filter)!;
     const empty = v.showZero;
     void attempt;
     if (!rev || !app.engine) return;
     const query = f.types.length ? [`type:${f.types.join('')}`] : [];
     app.engine
-      .balance({ tree: true, query, ...(valueIn ? { valueIn } : {}), ...(empty ? { empty: true } : {}) })
+      .balance({ tree: true, query, ...val, ...(empty ? { empty: true } : {}) })
       .then((r) => {
         report = r;
         error = null;

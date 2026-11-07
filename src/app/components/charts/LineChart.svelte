@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Single-series line with a soft area and a crosshair tooltip.
+  // A line with a soft area and a crosshair tooltip; optionally a second, dashed comparison line
+  // on the same axis (e.g. market value vs cost basis), with a legend and direct end labels.
   import { niceTicks, compact } from './scale';
 
   let {
@@ -10,7 +11,21 @@
     prefix = '',
     height = 200,
     title,
-  }: { labels: string[]; values: number[]; color?: string; format?: (v: number) => string; prefix?: string; height?: number; title: string } = $props();
+    name = 'Value',
+    compare,
+  }: {
+    labels: string[];
+    values: number[];
+    color?: string;
+    format?: (v: number) => string;
+    prefix?: string;
+    height?: number;
+    title: string;
+    /** Name of the main series (legend, table header) when there is a comparison line. */
+    name?: string;
+    compare?: { name: string; values: number[]; color?: string };
+  } = $props();
+  const color2 = $derived(compare?.color ?? 'var(--chart-2)');
 
   // Starts at 0 so the chart never props its container open; it renders once measured.
   let width = $state(0);
@@ -18,8 +33,9 @@
   let showTable = $state(false);
   const pad = { l: 48, r: 12, t: 12, b: 26 };
   const ticks = $derived.by(() => {
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
+    const all = compare ? [...values, ...compare.values] : values;
+    const lo = Math.min(...all);
+    const hi = Math.max(...all);
     // Keep zero in range unless the values sit far from it (a net worth line shouldn't be flattened).
     const far = lo > 0 && lo > (hi - lo) * 1.5;
     return niceTicks(lo, hi, 4, !far);
@@ -30,7 +46,16 @@
   const iw = $derived(Math.max(10, width - pad.l - pad.r));
   const x = (i: number) => pad.l + (values.length <= 1 ? iw / 2 : (i / (values.length - 1)) * iw);
   const y = (v: number) => pad.t + ih - ((v - y0) / (y1 - y0 || 1)) * ih;
-  const line = $derived(values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(''));
+  const path = (vs: number[]) => vs.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const line = $derived(path(values));
+  const line2 = $derived(compare ? path(compare.values) : '');
+  // Direct labels at the line ends: the higher line's label above, the lower one's below.
+  const ends = $derived.by(() => {
+    if (!compare || !values.length || !compare.values.length) return null;
+    const a = values[values.length - 1]!;
+    const b = compare.values[compare.values.length - 1]!;
+    return { a: y(a) + (a >= b ? -10 : 18), b: y(b) + (a >= b ? 18 : -10) };
+  });
   const base = $derived(y0 > 0 ? y0 : y1 < 0 ? y1 : 0);
   const area = $derived(values.length ? `${line}L${x(values.length - 1)},${y(base)}L${x(0)},${y(base)}Z` : '');
   const labelEvery = $derived(Math.ceil(labels.length / Math.max(1, Math.floor(iw / 60))));
@@ -45,14 +70,18 @@
 
 <figure class="chart">
   <div class="legend">
+    {#if compare}
+      <span aria-hidden="true"><i style:background={color}></i>{name}</span>
+      <span aria-hidden="true"><i class="dash" style:border-color={color2}></i>{compare.name}</span>
+    {/if}
     <button class="link" type="button" onclick={() => (showTable = !showTable)} aria-label={showTable ? `Show ${title} as a chart` : `Show ${title} as a table`}>{showTable ? 'Chart' : 'Table'}</button>
   </div>
   {#if showTable}
     <div class="table-wrap">
       <table>
         <caption class="sr-only">{title}</caption>
-        <thead><tr><th scope="col">Period</th><th scope="col">Value</th></tr></thead>
-        <tbody>{#each labels as l, i (l + i)}<tr><th scope="row">{l}</th><td class="num">{format(values[i] ?? 0)}</td></tr>{/each}</tbody>
+        <thead><tr><th scope="col">Period</th><th scope="col">{name}</th>{#if compare}<th scope="col">{compare.name}</th>{/if}</tr></thead>
+        <tbody>{#each labels as l, i (l + i)}<tr><th scope="row">{l}</th><td class="num">{format(values[i] ?? 0)}</td>{#if compare}<td class="num">{format(compare.values[i] ?? 0)}</td>{/if}</tr>{/each}</tbody>
       </table>
     </div>
   {:else}
@@ -72,18 +101,28 @@
           {#if i % labelEvery === 0}<text x={x(i)} y={height - 8} text-anchor="middle" class="tick">{l}</text>{/if}
         {/each}
         <path d={area} fill="url(#{gid})" />
+        {#if compare}<path d={line2} fill="none" stroke={color2} stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round" />{/if}
         <path d={line} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+        {#if ends && compare}
+          <text x={x(values.length - 1)} y={ends.a} text-anchor="end" class="end">{name}</text>
+          <text x={x(compare.values.length - 1)} y={ends.b} text-anchor="end" class="end">{compare.name}</text>
+        {/if}
         {#if values.length}
           <circle cx={x(values.length - 1)} cy={y(values[values.length - 1]!)} r="4" fill={color} stroke="var(--surface)" stroke-width="2" />
         {/if}
         {#if hover !== null}
           <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} class="cross" />
+          {#if compare && compare.values[hover] != null}<circle cx={x(hover)} cy={y(compare.values[hover]!)} r="5" fill={color2} stroke="var(--surface)" stroke-width="2" />{/if}
           <circle cx={x(hover)} cy={y(values[hover]!)} r="5" fill={color} stroke="var(--surface)" stroke-width="2" />
         {/if}
       </svg>{/if}
       {#if hover !== null}
         <div class="tip" style:left="{Math.min(Math.max(x(hover), 80), width - 80)}px">
-          <strong>{labels[hover]}</strong><span class="num">{format(values[hover] ?? 0)}</span>
+          <strong>{labels[hover]}</strong>
+          {#if compare}
+            <span class="row"><i style:background={color}></i>{name}<span class="num">{format(values[hover] ?? 0)}</span></span>
+            <span class="row"><i class="dash" style:border-color={color2}></i>{compare.name}<span class="num">{format(compare.values[hover] ?? 0)}</span></span>
+          {:else}<span class="num">{format(values[hover] ?? 0)}</span>{/if}
         </div>
       {/if}
     </div>
@@ -97,8 +136,13 @@
   .grid { stroke: var(--border); }
   .cross { stroke: var(--border-strong); stroke-dasharray: 3 3; }
   .tick { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .legend { display: flex; justify-content: flex-end; margin-bottom: 4px; }
-  .link { background: none; border: 0; color: var(--accent); font-size: 0.8rem; font-weight: 600; padding: 4px; }
+  .legend { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 4px; font-size: 0.8rem; color: var(--text-2); }
+  .legend span, .tip .row { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i, .tip i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend i.dash, .tip i.dash { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed; background: none; }
+  .tip .row .num { margin-left: auto; padding-left: 10px; }
+  .end { fill: var(--text-2); font-size: 11px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+  .link { margin-left: auto; background: none; border: 0; color: var(--accent); font-size: 0.8rem; font-weight: 600; padding: 4px; }
   .tip {
     position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; background: var(--surface);
     border: 1px solid var(--border); border-radius: var(--radius-s); box-shadow: var(--shadow-2); padding: 6px 10px;
