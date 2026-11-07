@@ -174,7 +174,7 @@
         <small>A <em>retain earnings</em> entry on {year}-12-31 moves the revenue and expense balances to <code>equity:retained earnings</code>, so the next year's income statement starts from zero and the profit shows in equity.</small></span>
     </label>
   </fieldset>
-  <label class="check"><input type="checkbox" bind:checked={showCosts} /> Keep the cost of each lot (<code>--show-costs</code>), e.g. for investments bought at different prices</label>
+  <label class="check"><input type="checkbox" bind:checked={showCosts} /> <span>Keep the cost of each lot (<code>--show-costs</code>), e.g. for investments bought at different prices</span></label>
   <div class="where">
     <label class="field">
       <span>{mode === 'migrate' ? 'Closing entry goes at the end of' : 'Entry goes at the end of'}</span>
