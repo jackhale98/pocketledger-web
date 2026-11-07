@@ -216,3 +216,52 @@ test('hide amounts blurs every amount', async ({ page }) => {
   await page.getByRole('button', { name: 'Show amounts' }).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-private', '');
 });
+
+test('reports export as CSV produced by hledger', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/statements?kind=bs');
+  await expect(page.getByText('Total assets')).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'CSV' }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^balance-sheet-\d{4}-\d\d-\d\d\.csv$/);
+  const text = await (await download.createReadStream()).toArray();
+  expect(Buffer.concat(text).toString('utf8')).toMatch(/assets/);
+});
+
+test('a market price can be added from the Prices tab', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/reports');
+  await page.getByRole('tab', { name: 'Prices' }).click();
+  await page.getByRole('button', { name: 'Add price' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Add a market price' });
+  await sheet.getByRole('combobox', { name: 'Commodity' }).fill('VTI');
+  await sheet.getByRole('textbox', { name: 'Price of one unit' }).fill('301.25');
+  await sheet.getByRole('combobox', { name: 'In currency' }).fill('$');
+  expect((await axe(page).include('dialog').analyze()).violations).toEqual([]);
+  await sheet.getByRole('button', { name: 'Add price' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByText(/Added P \d{4}-\d\d-\d\d VTI \$301\.25 to prices\.journal/)).toBeVisible();
+  await expect(page.locator('main tr', { hasText: 'VTI' }).first()).toContainText('$301.25');
+});
+
+test('table rows can be grouped by payee and spending by merchant', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/reports');
+  await page.getByRole('tab', { name: 'Table' }).click();
+  await page.getByLabel('Rows').selectOption('payee');
+  await expect(page.locator('main table')).toContainText('Landlord');
+  await page.getByRole('tab', { name: 'Overview' }).click();
+  await page.getByRole('button', { name: 'Merchant' }).click();
+  await expect(page.locator('ul.rank')).toContainText('Landlord');
+});
+
+test('auto-posting rules are applied to reports', async ({ page }) => {
+  await openDemo(page);
+  await page.goto('app/#/files/main.journal');
+  await page.getByRole('button', { name: 'Edit' }).click();
+  const ta = page.getByRole('textbox', { name: /Contents of main.journal/ });
+  await ta.fill((await ta.inputValue()) + '\n= expenses:coffee\n    (tracking:caffeine)  *1\n');
+  await expect(page.getByText('hledger reads this')).toBeVisible();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await page.goto('app/#/accounts');
+  await expect(page.getByRole('link', { name: 'tracking' })).toBeVisible();
+});

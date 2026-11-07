@@ -60,3 +60,6 @@ export function isReadOnlyCommand(args: string[]): boolean {
   if (args.some((a) => a === '-o' || a.startsWith('--output-file') || a.startsWith('-o'))) return false;
   return true;
 }
+
+/** Regex-escape an account name for an `acct:` query that matches it and its subaccounts. */
+export const accountQuery = (name: string) => `acct:^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`;

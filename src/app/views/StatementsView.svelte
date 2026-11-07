@@ -8,6 +8,8 @@
   import Money from '../components/Money.svelte';
   import ValueIn from '../components/ValueIn.svelte';
   import ErrorPanel from '../components/ErrorPanel.svelte';
+  import Icon from '../components/Icon.svelte';
+  import { exportCsv } from '../lib/export';
 
   type Kind = 'bs' | 'is' | 'cf';
   const KINDS: { id: Kind; label: string }[] = [
@@ -71,6 +73,7 @@
     <select class="input" bind:value={depth}>{#each [1, 2, 3, 4, 9] as d (d)}<option value={d}>{d === 9 ? 'All' : d}</option>{/each}</select>
   </label>
   <ValueIn />
+  <button class="btn small ghost" type="button" onclick={() => exportCsv([kind, '--flat'], { period: { ...(fixed ?? presetRange(preset)), ...(interval ? { interval } : {}) }, depth, ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}) }, { bs: 'balance-sheet', is: 'income-statement', cf: 'cash-flow' }[kind])}><Icon name="download" size={16} /> CSV</button>
 </div>
 
 {#if error}

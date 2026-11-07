@@ -9,6 +9,8 @@
   import Icon from '../components/Icon.svelte';
   import ValueIn from '../components/ValueIn.svelte';
   import ErrorPanel from '../components/ErrorPanel.svelte';
+  import { exportCsv } from '../lib/export';
+  import { accountQuery } from '$lib/engine/args';
 
   let { account }: { account: string } = $props();
   let rows = $state.raw<RegisterRow[] | null>(null);
@@ -64,6 +66,7 @@
   <div class="actions">
     <ValueIn />
     <a class="btn small" href="{href('reconcile')}?account={encodeURIComponent(account)}"><Icon name="check-circle" size={16} /> Reconcile</a>
+    <button class="btn small ghost" type="button" onclick={() => exportCsv(['register', accountQuery(account)], settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}, `register-${account.replace(/[^\w]+/g, '-')}`)}><Icon name="download" size={16} /> CSV</button>
   </div>
 </div>
 

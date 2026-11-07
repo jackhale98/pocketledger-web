@@ -4,6 +4,65 @@
   import { app } from '../../state/app.svelte';
   import { reportFilters as f } from '../../state/reports.svelte';
   import LineChart from '../../components/charts/LineChart.svelte';
+  import Sheet from '../../components/Sheet.svelte';
+  import Icon from '../../components/Icon.svelte';
+  import ErrorPanel from '../../components/ErrorPanel.svelte';
+  import type { EngineError } from '$lib/contracts/engine';
+  import { formatAmount } from '$lib/engine/decimal';
+  import { app as appState, SaveError } from '../../state/app.svelte';
+  import { toasts } from '../../state/toast.svelte';
+  import { parseAmountInput, todayISO } from '../../lib/amounts';
+  import { chartCommodity, styleOf } from '../../lib/primary';
+
+  // ---- add a market price (a `P` directive), since prices are never downloaded
+  let adding = $state(false);
+  let pDate = $state(todayISO());
+  let pComm = $state('');
+  let pPrice = $state('');
+  let pIn = $state('');
+  let pErrors = $state<EngineError[]>([]);
+  let pSaving = $state(false);
+  const priced = $derived(appState.commodities.map((c) => c.symbol));
+  /** File that already holds P directives (most of them), else the root journal. */
+  const priceFile = $derived.by(() => {
+    let best = '';
+    let n = 0;
+    for (const [path, text] of Object.entries(appState.files)) {
+      if (!/\.(journal|hledger|ledger|j|prices)$/i.test(path)) continue;
+      const k = (text.match(/^P\s/gm) ?? []).length;
+      if (k > n) [best, n] = [path, k];
+    }
+    return best || appState.vault?.rootFile || 'main.journal';
+  });
+  function openAdd(commodity = '') {
+    pDate = todayISO();
+    pComm = commodity;
+    pPrice = '';
+    pIn = chartCommodity();
+    pErrors = [];
+    adding = true;
+  }
+  const quote = (c: string) => (/^[^\s\d.,\-+"@;]+$/.test(c) ? c : `"${c}"`);
+  async function savePrice() {
+    const q = parseAmountInput(pPrice, styleOf(pIn).decimalMark).quantity;
+    if (!pComm.trim() || q == null || !pIn.trim()) {
+      pErrors = [{ kind: 'internal', message: 'Enter a commodity, a price and the currency it is priced in.' }];
+      return;
+    }
+    const amount = formatAmount({ commodity: pIn.trim(), quantity: q, style: styleOf(pIn.trim()) }, { group: false });
+    const line = `P ${pDate} ${quote(pComm.trim())} ${amount}`;
+    const text = appState.files[priceFile] ?? '';
+    pSaving = true;
+    try {
+      await appState.applyPatches([{ op: 'append', file: priceFile, text: `${text === '' || text.endsWith('\n') ? '' : '\n'}${line}\n` }], `price ${pComm.trim()}`);
+      toasts.show(`Added ${line} to ${priceFile}`, { tone: 'ok', action: { label: 'Undo', run: () => void appState.undo() } });
+      adding = false;
+    } catch (e) {
+      pErrors = e instanceof SaveError ? e.errors : [{ kind: 'internal', message: (e as Error).message }];
+    } finally {
+      pSaving = false;
+    }
+  }
 
   let points = $state.raw<PricePoint[] | null>(null);
   let error = $state('');
@@ -44,6 +103,10 @@
   const current = $derived(series.find((s) => s.key === selected) ?? series[0]);
 </script>
 
+<div class="addbar">
+  <button class="btn small primary" type="button" onclick={() => openAdd(current?.commodity ?? '')} disabled={appState.readOnly}><Icon name="plus" size={16} /> Add price</button>
+</div>
+
 {#if error}
   <p class="card card-pad neg">{error}</p>
 {:else if !points}
@@ -80,6 +143,9 @@
 {/if}
 
 <style>
+  .addbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  .pform { display: grid; gap: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .list { overflow-x: auto; margin-bottom: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
@@ -93,3 +159,21 @@
   .empty { display: grid; gap: 8px; }
   code { font-family: var(--mono); font-size: 0.85em; }
 </style>
+
+<Sheet bind:open={adding} title="Add a market price">
+  {#if pErrors.length}<ErrorPanel title="Not saved" errors={pErrors} compact />{/if}
+  <form class="pform" onsubmit={(e) => { e.preventDefault(); void savePrice(); }}>
+    <label class="field"><span>Date</span><input class="input" type="date" bind:value={pDate} /></label>
+    <label class="field"><span>Commodity</span><input class="input" list="pl-price-comms" bind:value={pComm} placeholder="e.g. VTI, EUR, BTC" autocapitalize="characters" autocomplete="off" /></label>
+    <div class="two">
+      <label class="field"><span>Price of one unit</span><input class="input num" inputmode="decimal" bind:value={pPrice} placeholder="0.00" autocomplete="off" /></label>
+      <label class="field"><span>In currency</span><input class="input" list="pl-price-comms" bind:value={pIn} autocapitalize="characters" autocomplete="off" /></label>
+    </div>
+    <datalist id="pl-price-comms">{#each priced as c (c)}<option value={c}></option>{/each}</datalist>
+    <p class="muted small">Written as a <code>P</code> directive to <span class="mono">{priceFile}</span>. hledger uses it for market value (“Value in”) and gains.</p>
+  </form>
+  {#snippet footer()}
+    <button class="btn" type="button" onclick={() => (adding = false)}>Cancel</button>
+    <button class="btn primary" type="button" onclick={savePrice} disabled={pSaving}>{pSaving ? 'Saving…' : 'Add price'}</button>
+  {/snippet}
+</Sheet>

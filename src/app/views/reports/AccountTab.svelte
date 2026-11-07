@@ -3,7 +3,7 @@
   import type { PeriodicReport, RegisterRow } from '$lib/contracts/engine';
   import type { MixedAmount } from '$lib/contracts/amount';
   import { EngineCallError } from '$lib/engine/client';
-  import { accountQuery } from '$lib/engine/hledger-engine';
+  import { accountQuery } from '$lib/engine/args';
   import { decodeRoi, type RoiRow } from '$lib/engine/decode/text';
   import { app } from '../../state/app.svelte';
   import { editor } from '../../state/editor.svelte';

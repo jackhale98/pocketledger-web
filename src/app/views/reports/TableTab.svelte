@@ -8,23 +8,30 @@
   import { columnLabel } from '../../lib/periods';
   import Money from '../../components/Money.svelte';
   import ErrorPanel from '../../components/ErrorPanel.svelte';
+  import Icon from '../../components/Icon.svelte';
+  import { exportCsv } from '../../lib/export';
 
   const GROUPS: [string, string][] = [['', 'All'], ['AC', 'Assets'], ['L', 'Liabilities'], ['E', 'Equity'], ['R', 'Income'], ['X', 'Expenses']];
   let interval = $state<Interval>('monthly');
   let depth = $state(2);
   let group = $state('X');
   let accumulation = $state<'change' | 'cumulative' | 'historical'>('change');
+  /** Rows: account names, or hledger --pivot by payee / a tag. */
+  let rows = $state('');
+  let tags = $state.raw<string[]>([]);
+  $effect(() => {
+    const rev = app.revision;
+    if (!rev || !app.engine) return;
+    app.engine.raw(['tags']).then((r) => (tags = r.code === 0 ? r.stdout.split('\n').map((t) => t.trim()).filter(Boolean) : []));
+  });
+  const currentOpts = () =>
+    f.opts({ period: { interval }, depth, accumulation, query: group ? [`type:${group}`] : [], ...(rows ? { pivot: rows } : {}) });
   let report = $state.raw<PeriodicReport | null>(null);
   let error = $state.raw<EngineCallError | null>(null);
 
   $effect(() => {
     const rev = app.revision;
-    const opts = f.opts({
-      period: { interval },
-      depth,
-      accumulation,
-      query: group ? [`type:${group}`] : [],
-    });
+    const opts = currentOpts();
     if (!rev || !app.engine) return;
     report = null;
     app.engine
@@ -42,6 +49,13 @@
     {#each GROUPS as [g, l] (g)}<button class="chip" type="button" aria-pressed={group === g} onclick={() => (group = g)}>{l}</button>{/each}
   </div>
   <div class="row">
+    <label class="ctl"><span>Rows</span>
+      <select class="input" bind:value={rows}>
+        <option value="">Accounts</option>
+        <option value="payee">Payees</option>
+        {#each tags as t (t)}<option value={t}>Tag: {t}</option>{/each}
+      </select>
+    </label>
     <label class="ctl"><span>Columns</span>
       <select class="input" bind:value={interval}>
         <option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option>
@@ -57,6 +71,7 @@
         <option value="historical">Balance (historical)</option>
       </select>
     </label>
+    <button class="btn small ghost" type="button" onclick={() => exportCsv(['balance', '--flat'], currentOpts(), rows ? `by-${rows}` : 'balances')}><Icon name="download" size={16} /> CSV</button>
   </div>
 </div>
 
@@ -69,7 +84,7 @@
 {:else}
   <div class="card scroll">
     <table>
-      <caption class="sr-only">Balances by {interval} period</caption>
+      <caption class="sr-only">Balances by {interval} period{rows ? `, grouped by ${rows}` : ''}</caption>
       <thead>
         <tr>
           <th scope="col" class="acct">Account</th>
@@ -80,7 +95,7 @@
       <tbody>
         {#each report.rows as r (r.account)}
           <tr>
-            <th scope="row" class="acct"><a href={href('account', r.account)}>{r.account}</a></th>
+            <th scope="row" class="acct">{#if rows}{r.account || '(none)'}{:else}<a href={href('account', r.account)}>{r.account}</a>{/if}</th>
             {#each r.amounts as a, i (i)}<td><Money value={a} zero="–" /></td>{/each}
             {#if accumulation === 'change'}<td class="strong"><Money value={r.total} zero="–" /></td><td><Money value={r.average} zero="–" /></td>{/if}
           </tr>

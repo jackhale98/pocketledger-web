@@ -4,7 +4,7 @@
   // other side of a transfer is untouched) and optionally write a balance assertion.
   import type { RegisterRow } from '$lib/contracts/engine';
   import { dec, formatAmount } from '$lib/engine/decimal';
-  import { accountQuery } from '$lib/engine/hledger-engine';
+  import { accountQuery } from '$lib/engine/args';
   import { draftFromTxn, writer } from '$lib/journal/writer';
   import { makeSnapshot } from '$lib/vault';
   import { app, SaveError } from '../state/app.svelte';

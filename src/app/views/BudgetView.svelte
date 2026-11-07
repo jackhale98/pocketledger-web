@@ -10,6 +10,7 @@
   import { styleOf } from '../lib/primary';
   import Icon from '../components/Icon.svelte';
   import BarChart from '../components/charts/BarChart.svelte';
+  import { exportCsv } from '../lib/export';
   import { columnLabel } from '../lib/periods';
   import { chartCommodity, fmtIn, numberIn } from '../lib/primary';
   import ErrorPanel from '../components/ErrorPanel.svelte';
@@ -117,6 +118,7 @@
   <h2 aria-live="polite">{month.label}</h2>
   <button class="icon-btn" type="button" onclick={() => offset++} aria-label="Next month"><Icon name="chevron-right" /></button>
   {#if offset !== 0}<button class="chip" type="button" onclick={() => (offset = 0)}>Today</button>{/if}
+  <button class="btn small ghost csv" type="button" onclick={() => exportCsv(['balance', '--budget', '--flat'], { period: { begin: month.begin, end: month.end, interval: 'monthly' }, ...(settings.v.valueIn ? { valueIn: settings.v.valueIn } : {}) }, `budget-${month.begin.slice(0, 7)}`)}><Icon name="download" size={16} /> CSV</button>
 </div>
 
 {#if error}
@@ -205,6 +207,7 @@
 
 <style>
   .month { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .csv { margin-left: auto; }
   .month h2 { font-size: 1.1rem; min-width: 170px; text-align: center; }
   .summary { margin-bottom: 12px; display: grid; gap: 10px; }
   .sum-row { display: flex; justify-content: space-between; align-items: flex-end; }

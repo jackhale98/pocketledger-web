@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { BalanceReport, PeriodicReport, StatementReport } from '$lib/contracts/engine';
   import { EngineCallError } from '$lib/engine/client';
-  import { accountQuery } from '$lib/engine/hledger-engine';
+  import { accountQuery } from '$lib/engine/args';
   import { app } from '../../state/app.svelte';
   import { router, href } from '../../state/router.svelte';
   import { reportFilters as f } from '../../state/reports.svelte';
@@ -20,6 +20,8 @@
   /** Drill-down path below the expense root, e.g. ['food']. */
   let path = $state<string[]>([]);
   let bdScope = $state<'last' | 'period'>('period');
+  /** Break spending down by category (accounts) or by merchant (hledger --pivot payee). */
+  let bdBy = $state<'category' | 'payee'>('category');
 
   const commodity = $derived(app.revision ? chartCommodity() : '');
   const fmt = $derived(fmtIn(commodity));
@@ -57,11 +59,16 @@
     const fc = f.forecast;
     const cols = flows?.columns;
     const scope = bdScope;
+    const by = bdBy;
     if (!rev || !app.engine || !c) return;
     const last = cols?.[cols.length - 1];
     const period = scope === 'last' && last ? { begin: last.begin, end: last.end } : f.range;
     app.engine
-      .balance({ query: [accountQuery(p), ...words], period, valueIn: c, depth: p.split(':').length + 1, ...(fc ? { forecast: true } : {}) })
+      .balance(
+        by === 'payee'
+          ? { query: [accountQuery(p), ...words], period, valueIn: c, pivot: 'payee', ...(fc ? { forecast: true } : {}) }
+          : { query: [accountQuery(p), ...words], period, valueIn: c, depth: p.split(':').length + 1, ...(fc ? { forecast: true } : {}) },
+      )
       .then((r) => (breakdown = r))
       .catch((e) => (error = e));
   });
@@ -79,7 +86,9 @@
 
   const depth = $derived(prefix.split(':').length + 1);
   const items = $derived(
-    breakdown
+    breakdown && bdBy === 'payee'
+      ? breakdown.rows.map((r) => ({ name: r.account || '(no payee)', value: numberIn(r.amount, commodity) }))
+      : breakdown
       ? breakdown.rows
           .filter((r) => r.account.split(':').length === depth && r.account.startsWith(prefix + ':'))
           .map((r) => ({ name: r.account.slice(prefix.length + 1), value: numberIn(r.amount, commodity) }))
@@ -180,25 +189,34 @@
     <section class="card card-pad" aria-labelledby="bd-h">
       <header>
         <h2 id="bd-h">Where the money went</h2>
+        <div class="seg" role="group" aria-label="Break down by">
+          <button type="button" aria-pressed={bdBy === 'category'} onclick={() => (bdBy = 'category')}>Category</button>
+          <button type="button" aria-pressed={bdBy === 'payee'} onclick={() => (bdBy = 'payee')}>Merchant</button>
+        </div>
         <label class="sr-only" for="bd-scope">Breakdown period</label>
         <select id="bd-scope" class="input mini" bind:value={bdScope}>
           <option value="period">Whole period</option>
           <option value="last">Latest {intervalWord}</option>
         </select>
       </header>
-      <nav class="crumbs" aria-label="Category path">
+      {#if bdBy === 'category'}<nav class="crumbs" aria-label="Category path">
         <button type="button" class="crumb" disabled={path.length === 0} onclick={() => (path = [])}>{expenseRoot}</button>
         {#each path as seg, i (i)}
           <span aria-hidden="true">›</span>
           <button type="button" class="crumb" disabled={i === path.length - 1} onclick={() => (path = path.slice(0, i + 1))}>{seg}</button>
         {/each}
         {#if path.length}<a class="reg" href={href('account', prefix)}>Register</a>{/if}
-      </nav>
+      </nav>{/if}
       {#if breakdown}
         <p class="total num">{fmt(bdTotal)}</p>
         {#if items.length}
-          <RankBars {items} format={fmt0} onpick={pick} />
-          <p class="muted small">Tap a category to drill in; a leaf opens its register.</p>
+          {#if bdBy === 'category'}
+            <RankBars {items} format={fmt0} onpick={pick} />
+            <p class="muted small">Tap a category to drill in; a leaf opens its register.</p>
+          {:else}
+            <RankBars {items} format={fmt0} />
+            <p class="muted small">Payees come from descriptions (text before “|”) or a <code>payee:</code> tag.</p>
+          {/if}
         {:else}<p class="muted">No spending here in this period.</p>{/if}
       {:else}<div class="skeleton" style="height:220px"></div>{/if}
     </section>
@@ -225,6 +243,11 @@
   section header span { font-size: 0.8rem; }
   .total { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
   .mini { min-height: 32px; padding: 2px 8px; width: auto; font-size: 0.82rem; }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-s); overflow: hidden; }
+  .seg button { border: 0; background: var(--surface); padding: 5px 10px; font-size: 0.8rem; font-weight: 600; color: var(--text-2); }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent-strong); }
+  code { font-family: var(--mono); }
   .crumbs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-3); }
   .crumb { background: none; border: 0; padding: 4px 2px; color: var(--accent); font-weight: 600; }
   .crumb:disabled { color: var(--text); cursor: default; }

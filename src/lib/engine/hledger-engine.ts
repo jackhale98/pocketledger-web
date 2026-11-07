@@ -20,7 +20,7 @@ import type {
   VaultSnapshot,
 } from '../contracts/engine';
 import type { AmountStyle } from '../contracts/amount';
-import { queryArgs, isReadOnlyCommand } from './args';
+import { queryArgs, isReadOnlyCommand, accountQuery } from './args';
 import { VAULT_ROOT, type EngineBackend } from './backend';
 import { parseHledgerJson } from './decode/json';
 import { decodeErrors } from './decode/errors';
@@ -48,8 +48,7 @@ const toVault = (abs: string): string | null => {
   return abs.startsWith(prefix) ? abs.slice(prefix.length) : null;
 };
 
-/** Regex-escape an account name for an `acct:` query that matches it and its subaccounts. */
-export const accountQuery = (name: string) => `acct:^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(:|$)`;
+export { accountQuery } from './args';
 
 export interface HledgerEngineOptions {
   version?: Partial<EngineVersion>;
