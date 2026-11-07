@@ -60,8 +60,6 @@ export class HledgerEngine implements Engine {
   private snapshot: VaultSnapshot | null = null;
   private lines = new Map<string, string[]>();
   private cache = new Map<string, Promise<RawResult>>();
-  /** Display styles seen in decoded amounts, per commodity. */
-  private styles = new Map<string, AmountStyle>();
 
   constructor(
     private readonly backend: EngineBackend,
@@ -143,7 +141,6 @@ export class HledgerEngine implements Engine {
     const raw = parseHledgerJson<HTxn[]>(stdout);
     return raw.map((h) => {
       const t = decodeTxn(h, toVault);
-      for (const p of t.postings) for (const a of p.amount) if (!this.styles.has(a.commodity)) this.styles.set(a.commodity, a.style);
       return t.source ? markInferred(t, this.sourceLines(t.source.file)) : t;
     });
   }
@@ -217,12 +214,12 @@ export class HledgerEngine implements Engine {
 
   async commodities(): Promise<CommodityInfo[]> {
     const symbols = decodeLines(await this.cmd(['commodities']));
-    const styles = this.styles;
-    if (symbols.some((c) => !styles.has(c))) {
-      // One small report carries a styled amount for every commodity in use.
-      const bal = decodeBalance(await this.json<HBalanceReport>(['balance', '--flat', '--empty', '-N']));
-      for (const row of bal.rows) for (const a of row.amount) if (!styles.has(a.commodity)) styles.set(a.commodity, a.style);
-    }
+    // Canonical display styles come from a report: hledger applies each commodity's
+    // directive or inferred style there. (`print` keeps every amount as it was
+    // written, e.g. "20 VTI" with precision 0 though the commodity shows 3 places.)
+    const styles = new Map<string, AmountStyle>();
+    const bal = decodeBalance(await this.json<HBalanceReport>(['balance', '--flat', '--empty', '-N']));
+    for (const row of bal.rows) for (const a of row.amount) if (!styles.has(a.commodity)) styles.set(a.commodity, a.style);
     const declared = new Set<string>();
     for (const text of Object.values(this.snapshot?.files ?? {}))
       for (const m of text.matchAll(/^commodity[ \t]+(?:"([^"]+)"|([^\s\d.,\-+]+)(?=[\s\d.,\-+]|$)|[\d.,\-+ ]*([^\s\d.,\-+]+))/gm)) declared.add(m[1] ?? m[2] ?? m[3]!);

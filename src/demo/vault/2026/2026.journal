@@ -56,6 +56,10 @@
     assets:brokerage                  2 VTI @ $262.10
     assets:checking
 
+2026-05-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $72.40
+    assets:checking
+
 2026-05-12 * Music Box | Subscription
     expenses:subscriptions                    $10.99
     liabilities:credit card
@@ -164,6 +168,10 @@
     assets:brokerage                  2 VTI @ $268.40
     assets:checking
 
+2026-06-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $72.85
+    assets:checking
+
 2026-06-12 * Music Box | Subscription
     expenses:subscriptions                    $10.99
     liabilities:credit card
@@ -216,6 +224,10 @@
     expenses:dining                           $32.32
     liabilities:credit card
 
+2026-06-26 * Brokerage | VTI dividend
+    assets:checking                           $41.18
+    income:dividends
+
 2026-06-28 * Acme Corp | Salary  ; payroll:
     assets:checking                        $3,200.00
     income:salary
@@ -258,6 +270,10 @@
 
 2026-07-10 * Brokerage | Buy VTI
     assets:brokerage                  2 VTI @ $274.95
+    assets:checking
+
+2026-07-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $72.10
     assets:checking
 
 2026-07-12 * Music Box | Subscription
@@ -312,6 +328,10 @@
     liabilities:credit card                  $606.70
     assets:checking
 
+2026-07-21 * ATM Lisbon | Euros for the trip  ; trip:lisbon
+    assets:euro cash                  150,00 EUR @@ $166.50
+    assets:checking
+
 2026-07-22 * Hotel Lisboa  ; trip:lisbon
     expenses:travel                   410,00 EUR @@ $451.00
     liabilities:credit card
@@ -321,8 +341,12 @@
     liabilities:credit card
 
 2026-07-23 * Pastelaria Belém  ; trip:lisbon
-    expenses:dining                        18,40 EUR
-    assets:cash                           -18,40 EUR
+    expenses:dining
+    assets:euro cash                  -18,40 EUR @ $1.11
+
+2026-07-24 * Lisbon Metro | Tram tickets  ; trip:lisbon
+    expenses:transport
+    assets:euro cash                  -12,80 EUR @ $1.11
 
 2026-07-25 * Transfer to savings
     assets:savings                           $400.00
@@ -390,6 +414,10 @@
 
 2026-08-10 * Brokerage | Buy VTI
     assets:brokerage                  2 VTI @ $271.30
+    assets:checking
+
+2026-08-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $73.05
     assets:checking
 
 2026-08-12 * Music Box | Subscription
@@ -504,6 +532,10 @@
     assets:brokerage                  2 VTI @ $280.15
     assets:checking
 
+2026-09-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $73.60
+    assets:checking
+
 2026-09-12 * Music Box | Subscription
     expenses:subscriptions                    $10.99
     liabilities:credit card
@@ -555,6 +587,10 @@
 2026-09-25 * ATM withdrawal
     assets:cash                               $60.00
     assets:checking
+
+2026-09-26 * Brokerage | VTI dividend
+    assets:checking                           $43.92
+    income:dividends
 
 2026-09-28 * Acme Corp | Salary  ; payroll:
     assets:checking                        $3,200.00
@@ -623,6 +659,10 @@
 2026-10-11 * Pizza Corner | Dinner
     expenses:dining                           $19.61
     liabilities:credit card
+
+2026-10-11 * Brokerage | Buy BND
+    assets:brokerage                  5 BND @ $73.20
+    assets:checking
 
 2026-10-12 * Music Box | Subscription
     expenses:subscriptions                    $10.99

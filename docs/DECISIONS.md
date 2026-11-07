@@ -251,3 +251,14 @@ price rather than at an average or lot cost). Values use `P` directives only
 (no `--infer-market-prices`, which QueryOpts cannot express), as `-X` does;
 latest prices come from `prices -e <end>`. Returns reuse D-019's `roi` call per
 account; value vs cost is `bal -M --historical` with `-X C` and `-B`.
+
+## D-025 Commodity styles come from reports; tidier demo
+
+`Engine.commodities()` now takes each commodity's display style from a
+`balance` report (hledger's canonical style: `commodity` directive or inferred),
+not from transactions — `print` keeps amounts as written, so `20 VTI` reported
+precision 0 although `commodity 1.000 VTI` declares 3. The demo vault gained a
+bond fund (BND) with monthly prices, VTI dividends, and a euro cash account
+funded by a currency exchange and spent at its cost (`-18,40 EUR @ $1.11`), so
+every valuation mode is in dollars and no account goes negative. Investment
+returns skip cash accounts (type C), where IRR is rarely meaningful.

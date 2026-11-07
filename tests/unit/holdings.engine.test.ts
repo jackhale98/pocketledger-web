@@ -97,18 +97,20 @@ describe.skipIf(!hasWasm)('holdings with hledger', () => {
     expect(row(asWritten, 'assets:brokerage', 'VTI')).toBe('32');
     // hledger bal -B
     const cost = await e.balance(valuationOpts({ valuation: 'cost', valueIn: '$' }));
-    expect(row(cost, 'assets:brokerage')).toBe('8529');
+    expect(row(cost, 'assets:brokerage')).toBe('10715');
+    expect(row(cost, 'assets:euro cash')).toBe('131.868');
     expect(row(cost, 'expenses:travel')).toBe('1135.4');
     // hledger bal -X '$'
     const value = await e.balance(valuationOpts({ valuation: 'value', valueIn: '$' }));
-    expect(row(value, 'assets:brokerage')).toBe('9171.2');
-    expect(row(value, 'assets:cash')).toBe('246.282');
+    expect(row(value, 'assets:brokerage')).toBe('11367.2');
+    expect(row(value, 'assets:cash')).toBe('266.89');
     // hledger bal --gain -X '$'
     const gain = await e.balance(valuationOpts({ valuation: 'gain', valueIn: '$' }));
     expect(gain.rows.map((r) => [r.account, row(gain, r.account)])).toEqual([
-      ['assets:brokerage', '642.2'],
+      ['assets:brokerage', '652.2'],
+      ['assets:euro cash', '1.188'],
       ['expenses:travel', '8.2'],
     ]);
-    expect(quantityOf(sumMixed(gain.total), '$')).toBe('650.4');
+    expect(quantityOf(sumMixed(gain.total), '$')).toBe('661.588');
   });
 });

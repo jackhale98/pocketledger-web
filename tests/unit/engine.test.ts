@@ -114,6 +114,14 @@ describe.skipIf(!hasWasm)('HledgerEngine', () => {
     expect(await e.check(good, ['-I', '--forecast=2025-01-01..2028-01-01'])).toEqual([]);
   });
 
+  it('reports each commodity in its canonical style, not as first written', async () => {
+    const e = await makeEngine();
+    await e.load(snapshot({ 'main.journal': 'commodity 1.000 VTI\ncommodity $1,000.00\n\n2026-01-01 Buy\n    assets:brokerage  20 VTI @ $250\n    assets:cash\n' }));
+    const c = await e.commodities();
+    expect(c.find((x) => x.symbol === 'VTI')?.style?.precision).toBe(3);
+    expect(c.find((x) => x.symbol === '$')?.style?.digitGroups?.separator).toBe(',');
+  });
+
   it('produces statements, budgets and registers', async () => {
     const e = await makeEngine();
     await e.load(snapshot({ 'main.journal': fixture('sample-with-budget.journal') }));

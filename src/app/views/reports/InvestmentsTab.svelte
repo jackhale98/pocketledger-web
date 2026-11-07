@@ -56,7 +56,17 @@
         const r = await fetchHoldings(engine, { currency: c, query: words, period: range });
         if (stale) return;
         holdings = r.holdings;
-        const accounts = [...new Set(r.holdings.map((h) => h.account))];
+        // Returns are for investments: skip cash accounts (type C, e.g. a foreign-currency
+        // wallet), where hledger's IRR is usually unsolvable and not meaningful.
+        const cashTypes = new Map(app.accounts.map((x) => [x.name, x.type]));
+        const isCash = (acct: string) => {
+          for (let n = acct; n; n = n.includes(':') ? n.slice(0, n.lastIndexOf(':')) : '') {
+            const t = cashTypes.get(n);
+            if (t) return t === 'C';
+          }
+          return false;
+        };
+        const accounts = [...new Set(r.holdings.map((h) => h.account))].filter((a) => !isCash(a));
         const ret = await fetchReturns(engine, accounts, c, range);
         if (!stale) returns = ret;
       } catch (e) {

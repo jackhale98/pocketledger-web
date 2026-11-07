@@ -33,18 +33,21 @@ writeFileSync(
 commodity $1,000.00
 commodity 1.000,00 EUR
 commodity 1.000 VTI
+commodity 1.000 BND
 
 account assets                    ; type: A
 account assets:checking           ; type: C
 account assets:savings            ; type: C
 account assets:cash               ; type: C
 account assets:brokerage          ; type: A
+account assets:euro cash          ; type: C
 account liabilities               ; type: L
 account liabilities:credit card   ; type: L
 account equity                    ; type: E
 account income                    ; type: R
 account income:salary
 account income:interest
+account income:dividends
 account expenses                  ; type: X
 account expenses:rent
 account expenses:groceries
@@ -71,6 +74,12 @@ P 2026-07-01 VTI $274.95
 P 2026-08-01 VTI $271.30
 P 2026-09-01 VTI $280.15
 P 2026-10-01 VTI $286.60
+P 2026-05-01 BND $72.40
+P 2026-06-01 BND $72.85
+P 2026-07-01 BND $72.10
+P 2026-08-01 BND $73.05
+P 2026-09-01 BND $73.60
+P 2026-10-01 BND $73.20
 `,
 );
 
@@ -126,6 +135,7 @@ tx('2026-05-01', '*', 'Opening balances', [
 const grocers = ['Green Market', 'Corner Grocery', 'FreshCo', 'Farmers Market'];
 const diners = ['Noodle House', 'Taqueria Sol', 'Pizza Corner', 'Thai Basil', 'Sushi Bar'];
 const vti = [262.1, 268.4, 274.95, 271.3, 280.15, 286.6];
+const bnd = [72.4, 72.85, 72.1, 73.05, 73.6, 73.2];
 for (const [mi, m] of months.entries()) {
   const ev = [];
   ev.push([1, '*', 'Landlord | Rent', [['expenses:rent', usd(1650)], ['assets:checking', null]]]);
@@ -147,10 +157,14 @@ for (const [mi, m] of months.entries()) {
   ev.push([Math.floor(1 + rnd() * 27), '*', 'Metro Card | Transit pass', [['expenses:transport', usd(95)], ['assets:checking', null]]]);
   ev.push([Math.floor(1 + rnd() * 27), '*', 'ATM withdrawal', [['assets:cash', usd(60)], ['assets:checking', null]]]);
   ev.push([10, '*', 'Brokerage | Buy VTI', [['assets:brokerage', `2 VTI @ $${vti[mi].toFixed(2)}`], ['assets:checking', null]]]);
+  ev.push([11, '*', 'Brokerage | Buy BND', [['assets:brokerage', `5 BND @ $${bnd[mi].toFixed(2)}`], ['assets:checking', null]]]);
+  if (m === '2026-06' || m === '2026-09') ev.push([26, '*', 'Brokerage | VTI dividend', [['assets:checking', usd(m === '2026-06' ? 41.18 : 43.92)], ['income:dividends', null]]]);
   if (m === '2026-07') {
     ev.push([18, '*', 'Air Europa | Flights', [['expenses:travel', usd(684.4)], ['liabilities:credit card', null]], 'trip:lisbon']);
     ev.push([22, '*', 'Hotel Lisboa', [['expenses:travel', '410,00 EUR @@ $451.00'], ['liabilities:credit card', null]], 'trip:lisbon']);
-    ev.push([23, '*', 'Pastelaria Belém', [['expenses:dining', '18,40 EUR'], ['assets:cash', '-18,40 EUR']], 'trip:lisbon']);
+    ev.push([21, '*', 'ATM Lisbon | Euros for the trip', [['assets:euro cash', '150,00 EUR @@ $166.50'], ['assets:checking', null]], 'trip:lisbon']);
+    ev.push([23, '*', 'Pastelaria Belém', [['expenses:dining', null], ['assets:euro cash', '-18,40 EUR @ $1.11']], 'trip:lisbon']);
+    ev.push([24, '*', 'Lisbon Metro | Tram tickets', [['expenses:transport', null], ['assets:euro cash', '-12,80 EUR @ $1.11']], 'trip:lisbon']);
   }
   if (m === '2026-09') ev.push([14, '*', 'Pharmacy', [['expenses:health', usd(32.15)], ['liabilities:credit card', null]]]);
   if (m === '2026-10') {

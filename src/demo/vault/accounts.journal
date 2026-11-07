@@ -2,18 +2,21 @@
 commodity $1,000.00
 commodity 1.000,00 EUR
 commodity 1.000 VTI
+commodity 1.000 BND
 
 account assets                    ; type: A
 account assets:checking           ; type: C
 account assets:savings            ; type: C
 account assets:cash               ; type: C
 account assets:brokerage          ; type: A
+account assets:euro cash          ; type: C
 account liabilities               ; type: L
 account liabilities:credit card   ; type: L
 account equity                    ; type: E
 account income                    ; type: R
 account income:salary
 account income:interest
+account income:dividends
 account expenses                  ; type: X
 account expenses:rent
 account expenses:groceries
